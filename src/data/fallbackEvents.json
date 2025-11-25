@@ -1,0 +1,402 @@
+[
+  {
+    "id": "childhood_001",
+    "situation": "You're 5 years old. Your parents offer to enroll you in music lessons, but you'd rather play outside with friends.",
+    "ageRange": [5, 10],
+    "level": 0,
+    "choices": {
+      "A": {
+        "text": "Take the music lessons (safe)",
+        "effects": {"health": 0, "happiness": -5, "wealth": 0, "skills": 10}
+      },
+      "B": {
+        "text": "Negotiate: lessons twice a week, play other days",
+        "effects": {"health": 5, "happiness": 5, "wealth": 0, "skills": 5}
+      },
+      "C": {
+        "text": "Refuse completely, play outside every day",
+        "effects": {"health": 10, "happiness": 10, "wealth": 0, "skills": -5}
+      }
+    }
+  },
+  {
+    "id": "school_001",
+    "situation": "You're 12. A bully demands your lunch money. You can fight, pay, or tell a teacher.",
+    "ageRange": [10, 15],
+    "level": 0,
+    "choices": {
+      "A": {
+        "text": "Tell a teacher immediately",
+        "effects": {"health": 0, "happiness": -5, "wealth": 0, "skills": 5}
+      },
+      "B": {
+        "text": "Give the money to avoid trouble",
+        "effects": {"health": 0, "happiness": -10, "wealth": -20, "skills": 0}
+      },
+      "C": {
+        "text": "Stand up and fight the bully",
+        "effects": {"health": -15, "happiness": 5, "wealth": 0, "skills": 10, "deathChance": 0.05}
+      }
+    }
+  },
+  {
+    "id": "teen_001",
+    "situation": "Age 16. Friends invite you to skip school and hang out at the mall. It's tempting but risky.",
+    "ageRange": [15, 18],
+    "level": 0,
+    "choices": {
+      "A": {
+        "text": "Stay in school, study hard",
+        "effects": {"health": 0, "happiness": -5, "wealth": 0, "skills": 10}
+      },
+      "B": {
+        "text": "Skip once, but make it count",
+        "effects": {"health": 0, "happiness": 10, "wealth": -10, "skills": -5}
+      },
+      "C": {
+        "text": "Skip regularly, live freely",
+        "effects": {"health": -5, "happiness": 15, "wealth": -20, "skills": -15, "deathChance": 0.1}
+      }
+    }
+  },
+  {
+    "id": "job_001",
+    "situation": "Age 18. You need money. Options: fast food job ($10/hr), freelance gigs (variable), or risky street work.",
+    "ageRange": [18, 25],
+    "level": 1,
+    "choices": {
+      "A": {
+        "text": "Take stable fast food job",
+        "effects": {"health": -5, "happiness": -5, "wealth": 200, "skills": 5}
+      },
+      "B": {
+        "text": "Try freelancing online",
+        "effects": {"health": 0, "happiness": 5, "wealth": 150, "skills": 15}
+      },
+      "C": {
+        "text": "High-risk street hustling",
+        "effects": {"health": -10, "happiness": -10, "wealth": 500, "skills": 10, "deathChance": 0.2}
+      }
+    }
+  },
+  {
+    "id": "college_001",
+    "situation": "Age 20. College tuition is due. Take a loan, work full-time, or drop out and start a business?",
+    "ageRange": [18, 25],
+    "level": 1,
+    "choices": {
+      "A": {
+        "text": "Take student loan, finish degree",
+        "effects": {"health": -5, "happiness": 5, "wealth": -5000, "skills": 20}
+      },
+      "B": {
+        "text": "Work part-time, study part-time",
+        "effects": {"health": -10, "happiness": -5, "wealth": -2000, "skills": 15}
+      },
+      "C": {
+        "text": "Drop out, start a business",
+        "effects": {"health": -15, "happiness": 10, "wealth": -1000, "skills": 25, "deathChance": 0.15}
+      }
+    }
+  },
+  {
+    "id": "career_001",
+    "situation": "Age 25. Your boss offers a promotion requiring 60hr/week. Or stay comfortable. Or quit for startup.",
+    "ageRange": [25, 35],
+    "level": 2,
+    "choices": {
+      "A": {
+        "text": "Keep current 40hr/week job",
+        "effects": {"health": 0, "happiness": 5, "wealth": 100, "skills": 5}
+      },
+      "B": {
+        "text": "Accept promotion, work harder",
+        "effects": {"health": -10, "happiness": -5, "wealth": 500, "skills": 15}
+      },
+      "C": {
+        "text": "Quit, join risky startup",
+        "effects": {"health": -15, "happiness": 10, "wealth": -500, "skills": 25, "deathChance": 0.2}
+      }
+    }
+  },
+  {
+    "id": "investment_001",
+    "situation": "Age 30. You have $10,000 saved. Index funds, real estate, or crypto gamble?",
+    "ageRange": [28, 40],
+    "level": 2,
+    "choices": {
+      "A": {
+        "text": "Safe index fund investment",
+        "effects": {"health": 0, "happiness": 5, "wealth": 800, "skills": 5}
+      },
+      "B": {
+        "text": "Real estate down payment",
+        "effects": {"health": -5, "happiness": 5, "wealth": 1500, "skills": 10}
+      },
+      "C": {
+        "text": "All-in on cryptocurrency",
+        "effects": {"health": -10, "happiness": -15, "wealth": 5000, "skills": 15, "deathChance": 0.25}
+      }
+    }
+  },
+  {
+    "id": "family_001",
+    "situation": "Age 32. Partner wants kids. You're unsure about timing and finances. Major life decision.",
+    "ageRange": [28, 40],
+    "level": 2,
+    "choices": {
+      "A": {
+        "text": "Wait a few more years",
+        "effects": {"health": 0, "happiness": -10, "wealth": 500, "skills": 5}
+      },
+      "B": {
+        "text": "Have one child now",
+        "effects": {"health": -5, "happiness": 10, "wealth": -3000, "skills": 0}
+      },
+      "C": {
+        "text": "Go all-in, have multiple kids",
+        "effects": {"health": -15, "happiness": 20, "wealth": -8000, "skills": -10, "deathChance": 0.1}
+      }
+    }
+  },
+  {
+    "id": "health_001",
+    "situation": "Age 40. Doctor finds early warning signs. Treatment is expensive. Ignore, basic care, or full treatment?",
+    "ageRange": [35, 50],
+    "level": 3,
+    "choices": {
+      "A": {
+        "text": "Get full treatment immediately",
+        "effects": {"health": 15, "happiness": -10, "wealth": -5000, "skills": 0}
+      },
+      "B": {
+        "text": "Basic care, monitor it",
+        "effects": {"health": 5, "happiness": -5, "wealth": -1000, "skills": 0}
+      },
+      "C": {
+        "text": "Ignore it, save money",
+        "effects": {"health": -20, "happiness": 5, "wealth": 0, "skills": 0, "deathChance": 0.35}
+      }
+    }
+  },
+  {
+    "id": "business_001",
+    "situation": "Age 45. Your business is struggling. Sell now for small profit, fight through, or double down with loan?",
+    "ageRange": [40, 55],
+    "level": 3,
+    "choices": {
+      "A": {
+        "text": "Sell business, take safe exit",
+        "effects": {"health": 5, "happiness": -10, "wealth": 10000, "skills": 0}
+      },
+      "B": {
+        "text": "Cut costs, stabilize slowly",
+        "effects": {"health": -5, "happiness": -5, "wealth": 2000, "skills": 10}
+      },
+      "C": {
+        "text": "Take massive loan, expand",
+        "effects": {"health": -20, "happiness": -15, "wealth": -10000, "skills": 25, "deathChance": 0.4}
+      }
+    }
+  },
+  {
+    "id": "midlife_001",
+    "situation": "Age 50. Feeling burned out. Continue career, semi-retire, or radical change (move abroad)?",
+    "ageRange": [45, 60],
+    "level": 4,
+    "choices": {
+      "A": {
+        "text": "Push through to retirement",
+        "effects": {"health": -10, "happiness": -10, "wealth": 2000, "skills": 5}
+      },
+      "B": {
+        "text": "Semi-retire, part-time work",
+        "effects": {"health": 5, "happiness": 10, "wealth": 500, "skills": 0}
+      },
+      "C": {
+        "text": "Sell everything, move abroad",
+        "effects": {"health": 10, "happiness": 25, "wealth": -5000, "skills": 15, "deathChance": 0.3}
+      }
+    }
+  },
+  {
+    "id": "legacy_001",
+    "situation": "Age 60. Considering how to spend remaining years. Relax, mentor others, or chase one last big goal?",
+    "ageRange": [55, 70],
+    "level": 4,
+    "choices": {
+      "A": {
+        "text": "Relax, enjoy simple pleasures",
+        "effects": {"health": 5, "happiness": 15, "wealth": -500, "skills": 0}
+      },
+      "B": {
+        "text": "Mentor younger generation",
+        "effects": {"health": 0, "happiness": 20, "wealth": 0, "skills": 10}
+      },
+      "C": {
+        "text": "Chase ambitious final project",
+        "effects": {"health": -15, "happiness": 10, "wealth": 5000, "skills": 20, "deathChance": 0.45}
+      }
+    }
+  },
+  {
+    "id": "retirement_001",
+    "situation": "Age 65. Retirement funds are tight. Downsize, part-time work, or risky investment to catch up?",
+    "ageRange": [60, 75],
+    "level": 5,
+    "choices": {
+      "A": {
+        "text": "Downsize home, live frugally",
+        "effects": {"health": 0, "happiness": -5, "wealth": 5000, "skills": 0}
+      },
+      "B": {
+        "text": "Take easy part-time job",
+        "effects": {"health": -5, "happiness": -5, "wealth": 1000, "skills": 5}
+      },
+      "C": {
+        "text": "Risky investment to recover",
+        "effects": {"health": -10, "happiness": -15, "wealth": 10000, "skills": 10, "deathChance": 0.5}
+      }
+    }
+  },
+  {
+    "id": "elderly_001",
+    "situation": "Age 70. Health declining. Expensive care, family help, or live independently as long as possible?",
+    "ageRange": [65, 80],
+    "level": 5,
+    "choices": {
+      "A": {
+        "text": "Move to assisted living facility",
+        "effects": {"health": 10, "happiness": -10, "wealth": -10000, "skills": 0}
+      },
+      "B": {
+        "text": "Rely on family for help",
+        "effects": {"health": 5, "happiness": 5, "wealth": -2000, "skills": 0}
+      },
+      "C": {
+        "text": "Stay independent, no help",
+        "effects": {"health": -20, "happiness": 15, "wealth": 0, "skills": 5, "deathChance": 0.6}
+      }
+    }
+  },
+  {
+    "id": "crisis_001",
+    "situation": "Age 28. Economic recession hits. Your company is downsizing. Accept severance, fight to stay, or switch careers?",
+    "ageRange": [25, 40],
+    "level": 2,
+    "choices": {
+      "A": {
+        "text": "Take severance package",
+        "effects": {"health": -5, "happiness": -10, "wealth": 5000, "skills": 0}
+      },
+      "B": {
+        "text": "Fight to keep your job",
+        "effects": {"health": -10, "happiness": -5, "wealth": 0, "skills": 10}
+      },
+      "C": {
+        "text": "Pivot to completely new field",
+        "effects": {"health": -15, "happiness": 5, "wealth": -2000, "skills": 25, "deathChance": 0.2}
+      }
+    }
+  },
+  {
+    "id": "opportunity_001",
+    "situation": "Age 35. Headhunter offers job in expensive city. Triple salary but high cost of living. Risk it?",
+    "ageRange": [30, 45],
+    "level": 3,
+    "choices": {
+      "A": {
+        "text": "Stay in current city, stable life",
+        "effects": {"health": 0, "happiness": 5, "wealth": 500, "skills": 0}
+      },
+      "B": {
+        "text": "Negotiate remote hybrid work",
+        "effects": {"health": -5, "happiness": 10, "wealth": 2000, "skills": 10}
+      },
+      "C": {
+        "text": "Move immediately, all-in",
+        "effects": {"health": -15, "happiness": -10, "wealth": 8000, "skills": 20, "deathChance": 0.25}
+      }
+    }
+  },
+  {
+    "id": "relationship_001",
+    "situation": "Age 29. Long-term relationship at crossroads. Marry, keep dating, or break up and start fresh?",
+    "ageRange": [25, 40],
+    "level": 2,
+    "choices": {
+      "A": {
+        "text": "Get married, commit fully",
+        "effects": {"health": 0, "happiness": 15, "wealth": -5000, "skills": 0}
+      },
+      "B": {
+        "text": "Keep dating, see how it goes",
+        "effects": {"health": 0, "happiness": -5, "wealth": 0, "skills": 0}
+      },
+      "C": {
+        "text": "Break up, start fresh",
+        "effects": {"health": -10, "happiness": -20, "wealth": 0, "skills": 10, "deathChance": 0.1}
+      }
+    }
+  },
+  {
+    "id": "tech_boom_001",
+    "situation": "Age 26. Tech startup offers stock options instead of salary. Join the lottery or stay stable?",
+    "ageRange": [24, 35],
+    "level": 2,
+    "choices": {
+      "A": {
+        "text": "Stay at stable corporate job",
+        "effects": {"health": 0, "happiness": 0, "wealth": 1000, "skills": 5}
+      },
+      "B": {
+        "text": "Join startup, balanced package",
+        "effects": {"health": -5, "happiness": 10, "wealth": 500, "skills": 20}
+      },
+      "C": {
+        "text": "All-in: low salary, max equity",
+        "effects": {"health": -15, "happiness": 5, "wealth": -500, "skills": 30, "deathChance": 0.3}
+      }
+    }
+  },
+  {
+    "id": "pandemic_001",
+    "situation": "Age 38. Pandemic lockdown. Remote work available but pays less. Stay, adapt, or start online business?",
+    "ageRange": [30, 50],
+    "level": 3,
+    "choices": {
+      "A": {
+        "text": "Accept remote work, lower pay",
+        "effects": {"health": 5, "happiness": 5, "wealth": -1000, "skills": 10}
+      },
+      "B": {
+        "text": "Keep office job, health risk",
+        "effects": {"health": -15, "happiness": -10, "wealth": 2000, "skills": 5}
+      },
+      "C": {
+        "text": "Quit, start online business",
+        "effects": {"health": 0, "happiness": 10, "wealth": -3000, "skills": 25, "deathChance": 0.25}
+      }
+    }
+  },
+  {
+    "id": "inheritance_001",
+    "situation": "Age 42. Distant relative leaves you $50,000. Pay debt, invest conservatively, or gamble on big opportunity?",
+    "ageRange": [35, 55],
+    "level": 3,
+    "choices": {
+      "A": {
+        "text": "Pay off all debts immediately",
+        "effects": {"health": 5, "happiness": 15, "wealth": 10000, "skills": 0}
+      },
+      "B": {
+        "text": "Invest in diversified portfolio",
+        "effects": {"health": 0, "happiness": 10, "wealth": 15000, "skills": 10}
+      },
+      "C": {
+        "text": "Bet everything on hot opportunity",
+        "effects": {"health": -10, "happiness": -5, "wealth": 40000, "skills": 15, "deathChance": 0.35}
+      }
+    }
+  }
+]

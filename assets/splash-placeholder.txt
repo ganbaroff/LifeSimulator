@@ -1,0 +1,2 @@
+// placeholder file for assets
+// Replace with actual splash.png (2048x2048)

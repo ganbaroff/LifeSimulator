@@ -1,0 +1,2 @@
+// placeholder file for assets
+// Replace with actual icon.png (1024x1024)

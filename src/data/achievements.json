@@ -1,0 +1,167 @@
+[
+  {
+    "id": "first_game",
+    "name": "First Steps",
+    "description": "Complete your first game",
+    "icon": "🎮",
+    "reward": 50,
+    "condition": {
+      "type": "games_completed",
+      "value": 1
+    }
+  },
+  {
+    "id": "centenarian",
+    "name": "Centenarian",
+    "description": "Reach age 100",
+    "icon": "👴",
+    "reward": 200,
+    "condition": {
+      "type": "max_age",
+      "value": 100
+    }
+  },
+  {
+    "id": "millionaire",
+    "name": "Millionaire",
+    "description": "Accumulate $1,000,000",
+    "icon": "💰",
+    "reward": 150,
+    "condition": {
+      "type": "max_wealth",
+      "value": 1000000
+    }
+  },
+  {
+    "id": "master_skill",
+    "name": "Master of Skills",
+    "description": "Reach 100 skill points",
+    "icon": "🎓",
+    "reward": 100,
+    "condition": {
+      "type": "max_skills",
+      "value": 100
+    }
+  },
+  {
+    "id": "survivor",
+    "name": "Survivor",
+    "description": "Survive 10 C-choice risks",
+    "icon": "🎲",
+    "reward": 250,
+    "condition": {
+      "type": "c_choices_survived",
+      "value": 10
+    }
+  },
+  {
+    "id": "risk_taker",
+    "name": "Risk Taker",
+    "description": "Choose C option 50 times",
+    "icon": "⚠️",
+    "reward": 150,
+    "condition": {
+      "type": "c_choices_made",
+      "value": 50
+    }
+  },
+  {
+    "id": "historian",
+    "name": "Historian",
+    "description": "Experience 20 historical events",
+    "icon": "📜",
+    "reward": 100,
+    "condition": {
+      "type": "historical_events",
+      "value": 20
+    }
+  },
+  {
+    "id": "world_traveler",
+    "name": "World Traveler",
+    "description": "Complete games in 5 different countries",
+    "icon": "🌍",
+    "reward": 300,
+    "condition": {
+      "type": "countries_played",
+      "value": 5
+    }
+  },
+  {
+    "id": "happy_life",
+    "name": "Happy Life",
+    "description": "Maintain 90+ happiness for entire game",
+    "icon": "😊",
+    "reward": 200,
+    "condition": {
+      "type": "min_happiness",
+      "value": 90
+    }
+  },
+  {
+    "id": "healthy_life",
+    "name": "Healthy Life",
+    "description": "Maintain 90+ health for entire game",
+    "icon": "❤️",
+    "reward": 200,
+    "condition": {
+      "type": "min_health",
+      "value": 90
+    }
+  },
+  {
+    "id": "level_master",
+    "name": "Level Master",
+    "description": "Complete all 5 levels",
+    "icon": "🏆",
+    "reward": 500,
+    "condition": {
+      "type": "levels_completed",
+      "value": 5
+    }
+  },
+  {
+    "id": "speedrunner",
+    "name": "Speedrunner",
+    "description": "Complete demo in under 3 minutes",
+    "icon": "⚡",
+    "reward": 150,
+    "condition": {
+      "type": "demo_time",
+      "value": 180
+    }
+  },
+  {
+    "id": "rewind_user",
+    "name": "Time Traveler",
+    "description": "Use Rewind 5 times",
+    "icon": "⏮️",
+    "reward": 100,
+    "condition": {
+      "type": "rewinds_used",
+      "value": 5
+    }
+  },
+  {
+    "id": "death_collector",
+    "name": "Death Collector",
+    "description": "Experience 10 different death causes",
+    "icon": "☠️",
+    "reward": 200,
+    "condition": {
+      "type": "unique_deaths",
+      "value": 10
+    }
+  },
+  {
+    "id": "professional",
+    "name": "Professional",
+    "description": "Complete games with 5 different professions",
+    "icon": "💼",
+    "reward": 150,
+    "condition": {
+      "type": "professions_played",
+      "value": 5
+    }
+  }
+]
