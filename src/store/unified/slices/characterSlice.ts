@@ -231,5 +231,6 @@ export const selectCharacterHistory = (state: { character: CharacterState }) => 
 export const selectIsCharacterAlive = (state: { character: CharacterState }) => state.character.character?.isAlive ?? false;
 
 // Reducer
-export default characterSlice;
-export { characterSlice };
+export default characterSlice.reducer;
+// Export the slice for tests that need access to actions
+export const characterSliceWithActions = characterSlice;
