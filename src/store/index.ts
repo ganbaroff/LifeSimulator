@@ -2,7 +2,7 @@ import { configureStore, Middleware, Action, ThunkAction } from '@reduxjs/toolki
 import { useDispatch, TypedUseSelectorHook, useSelector } from 'react-redux';
 import { setupListeners } from '@reduxjs/toolkit/query';
 import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import gameReducer, { GameState } from './slices/gameSlice';
 import activitiesReducer, { 
   updateActivityProgress,
@@ -40,7 +40,7 @@ const gameLoopMiddleware: Middleware<{}, RootState> = (store) => (next) => (acti
 // Configure persist
 const persistConfig = {
   key: 'root',
-  storage,
+  storage: AsyncStorage,
   whitelist: ['game', 'activities', 'character'], // Only persist these slices
 };
 
