@@ -27,8 +27,7 @@
     "clean": "expo start --clear",
     "reset": "expo start --reset-cache",
     "precommit": "npm run lint:fix && npm run format && npm run type-check",
-    "prebuild": "npm run validate",
-    "postinstall": "node node_modules/expo/bin/postinstall"
+    "prebuild": "npm run validate"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
