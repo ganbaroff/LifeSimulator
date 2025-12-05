@@ -274,4 +274,5 @@ export const selectCurrentAge = (state: { game: GameSliceState }) => state.game.
 export const selectAutoSaveEnabled = (state: { game: GameSliceState }) => state.game.autoSaveEnabled;
 
 // Reducer
-export default gameSlice.reducer;
+export default gameSlice;
+export { gameSlice };

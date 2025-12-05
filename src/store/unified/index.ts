@@ -27,8 +27,8 @@ const persistConfig = {
 
 // Unified root state interface
 export interface RootState {
-  character: ReturnType<typeof unifiedCharacterSlice>;
-  game: ReturnType<typeof unifiedGameSlice>;
+  character: ReturnType<typeof unifiedCharacterSlice.reducer>;
+  game: ReturnType<typeof unifiedGameSlice.reducer>;
   activities: ReturnType<typeof activitiesSlice>;
   ui: ReturnType<typeof uiSliceEnhanced>;
 }
@@ -69,8 +69,8 @@ const performanceMiddleware: Middleware<{}, RootState> = (store) => (next) => (a
 };
 
 // Create persisted reducers
-const persistedCharacterReducer = persistReducer(persistConfig, unifiedCharacterSlice);
-const persistedGameReducer = persistReducer(persistConfig, unifiedGameSlice);
+const persistedCharacterReducer = persistReducer(persistConfig, unifiedCharacterSlice.reducer);
+const persistedGameReducer = persistReducer(persistConfig, unifiedGameSlice.reducer);
 
 // Configure unified store
 export const store = configureStore({

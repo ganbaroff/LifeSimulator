@@ -231,4 +231,5 @@ export const selectCharacterHistory = (state: { character: CharacterState }) => 
 export const selectIsCharacterAlive = (state: { character: CharacterState }) => state.character.character?.isAlive ?? false;
 
 // Reducer
-export default characterSlice.reducer;
+export default characterSlice;
+export { characterSlice };
