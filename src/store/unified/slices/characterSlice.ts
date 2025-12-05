@@ -232,3 +232,5 @@ export const selectIsCharacterAlive = (state: { character: CharacterState }) => 
 
 // Reducer
 export default characterSlice.reducer;
+// Export the slice for tests that need access to actions
+export const characterSliceWithActions = characterSlice;

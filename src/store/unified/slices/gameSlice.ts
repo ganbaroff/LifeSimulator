@@ -275,3 +275,5 @@ export const selectAutoSaveEnabled = (state: { game: GameSliceState }) => state.
 
 // Reducer
 export default gameSlice.reducer;
+// Export the slice for tests that need access to actions
+export const gameSliceWithActions = gameSlice;
