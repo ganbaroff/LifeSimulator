@@ -1,0 +1,50 @@
+{
+  "first_unisex": ["Alex", "Sam", "Jordan", "Taylor", "Casey", "Avery", "Riley", "Quinn"],
+  "first_male": [
+    "Ivan",
+    "Max",
+    "Artem",
+    "Nikolai",
+    "Pavel",
+    "Oleg",
+    "Victor",
+    "Sergey",
+    "John",
+    "Michael",
+    "David",
+    "James",
+    "Robert",
+    "William"
+  ],
+  "first_female": [
+    "Anna",
+    "Maria",
+    "Elena",
+    "Olga",
+    "Sofia",
+    "Diana",
+    "Irina",
+    "Natalia",
+    "Emily",
+    "Grace",
+    "Sarah",
+    "Emma",
+    "Olivia",
+    "Ava"
+  ],
+  "surnames": [
+    "Ivanov",
+    "Petrov",
+    "Sidorov",
+    "Smirnov",
+    "Kuznetsov",
+    "Volkov",
+    "Novak",
+    "Johnson",
+    "Smith",
+    "Brown",
+    "Taylor",
+    "Williams",
+    "Miller"
+  ]
+}

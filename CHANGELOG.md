@@ -3,6 +3,7 @@
 ## [1.0.0] - 2025-11-25
 
 ### Added
+
 - ✨ Full React Native (Expo) implementation
 - 🤖 Gemini Flash AI integration for event generation
 - 📜 Historical events system (1850-2025) for 7 countries
@@ -18,6 +19,7 @@
 - 📱 Android-ready build configuration
 
 ### Features
+
 - Character creation with country and birth year selection
 - Dynamic event generation based on age, profession, and historical context
 - Fallback event system (20 pre-written events) when AI unavailable
@@ -30,6 +32,7 @@
 - Complete navigation flow
 
 ### Technical
+
 - React Navigation v6
 - Context API for state management
 - Expo Linear Gradient for UI
@@ -39,6 +42,7 @@
 - TypeScript-ready structure
 
 ### Documentation
+
 - README.md - Complete project overview
 - SETUP.md - Detailed setup instructions
 - DEVELOPMENT.md - Developer guide for adding features
@@ -46,6 +50,7 @@
 - Inline code comments in all files
 
 ### Known Limitations
+
 - Avaturn integration is mock (placeholder images)
 - Adapty IAP is mock (needs real SDK integration)
 - No assets/icons included (placeholders provided)
@@ -54,6 +59,7 @@
 ## [Planned - 1.1.0]
 
 ### To Add
+
 - Real Avaturn SDK integration with selfie upload
 - Real Adapty SDK integration for IAP
 - Share to social media feature
@@ -70,6 +76,7 @@
 - Leaderboards
 
 ### To Improve
+
 - Performance optimization
 - Better error handling
 - More event variety (50+ fallback events)

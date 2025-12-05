@@ -37,7 +37,7 @@ export const generateAvatar = async (imageUri, age = 20) => {
     const response = await fetch(`${AVATURN_API_URL}/generate`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${AVATURN_API_KEY}`,
+        Authorization: `Bearer ${AVATURN_API_KEY}`,
       },
       body: formData,
     });

@@ -1,0 +1,489 @@
+// 🎨 Design System для Life Simulator Azerbaijan
+// Создано: Designer (Agile Team)
+// Версия: 3.0.0 - Light Theme Support
+
+// 🌈 Color Palettes
+export const DarkColors = {
+  // Основные цвета
+  primary: '#10b981',
+  secondary: '#3b82f6',
+  accent: '#f59e0b',
+  danger: '#ef4444',
+  warning: '#f59e0b',
+  success: '#10b981',
+  info: '#3b82f6',
+  
+  // Фоновые цвета
+  background: {
+    primary: '#0f172a',
+    secondary: '#1e293b',
+    tertiary: '#334155',
+    overlay: 'rgba(0, 0, 0, 0.5)',
+    card: '#1e293b',
+    modal: '#334155',
+    input: '#334155',
+  },
+  
+  // Текстовые цвета
+  text: {
+    primary: '#ffffff',
+    secondary: '#94a3b8',
+    tertiary: '#64748b',
+    inverse: '#0f172a',
+    accent: '#10b981',
+    success: '#10b981',
+    warning: '#f59e0b',
+    error: '#ef4444',
+  },
+  
+  // Границы и разделители
+  border: {
+    primary: '#334155',
+    secondary: '#475569',
+    tertiary: '#64748b',
+    accent: '#10b981',
+    danger: '#ef4444',
+  },
+  
+  // Тени
+  shadow: {
+    sm: 'rgba(0, 0, 0, 0.1)',
+    md: 'rgba(0, 0, 0, 0.2)',
+    lg: 'rgba(0, 0, 0, 0.3)',
+    xl: 'rgba(0, 0, 0, 0.4)',
+  },
+  
+  // Статусы
+  status: {
+    online: '#10b981',
+    offline: '#64748b',
+    busy: '#ef4444',
+    away: '#f59e0b',
+  },
+};
+
+export const LightColors = {
+  // Основные цвета
+  primary: '#059669',
+  secondary: '#2563eb',
+  accent: '#d97706',
+  danger: '#dc2626',
+  warning: '#d97706',
+  success: '#059669',
+  info: '#2563eb',
+  
+  // Фоновые цвета
+  background: {
+    primary: '#ffffff',
+    secondary: '#f8fafc',
+    tertiary: '#f1f5f9',
+    overlay: 'rgba(0, 0, 0, 0.3)',
+    card: '#ffffff',
+    modal: '#f8fafc',
+    input: '#f1f5f9',
+  },
+  
+  // Текстовые цвета
+  text: {
+    primary: '#0f172a',
+    secondary: '#475569',
+    tertiary: '#64748b',
+    inverse: '#ffffff',
+    accent: '#059669',
+    success: '#059669',
+    warning: '#d97706',
+    error: '#dc2626',
+  },
+  
+  // Границы и разделители
+  border: {
+    primary: '#e2e8f0',
+    secondary: '#cbd5e1',
+    tertiary: '#94a3b8',
+    accent: '#059669',
+    danger: '#dc2626',
+  },
+  
+  // Тени
+  shadow: {
+    sm: 'rgba(0, 0, 0, 0.05)',
+    md: 'rgba(0, 0, 0, 0.1)',
+    lg: 'rgba(0, 0, 0, 0.15)',
+    xl: 'rgba(0, 0, 0, 0.2)',
+  },
+  
+  // Статусы
+  status: {
+    online: '#059669',
+    offline: '#94a3b8',
+    busy: '#dc2626',
+    away: '#d97706',
+  },
+};
+
+// 🎨 Theme Type Definition
+export type ThemeMode = 'dark' | 'light';
+export type ColorPalette = typeof DarkColors;
+
+// 🎨 Dynamic Colors based on theme
+export const getColors = (theme: ThemeMode): ColorPalette => {
+  return theme === 'dark' ? DarkColors : LightColors;
+};
+
+// 🎨 Default Colors (backward compatibility)
+export const Colors = DarkColors;
+
+// 📏 Spacing
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+  huge: 48,
+  massive: 64,
+};
+
+// 📝 Typography
+export const Typography = {
+  // Font families
+  fontFamily: {
+    primary: 'Inter',
+    secondary: 'Roboto',
+    mono: 'JetBrains Mono',
+  },
+  
+  // Font sizes
+  fontSize: {
+    xs: 12,
+    sm: 14,
+    base: 16,
+    lg: 18,
+    xl: 20,
+    '2xl': 24,
+    '3xl': 30,
+    '4xl': 36,
+    '5xl': 48,
+    '6xl': 64,
+  },
+  
+  // Font weights
+  fontWeight: {
+    thin: '100',
+    light: '300',
+    normal: '400',
+    medium: '500',
+    semibold: '600',
+    bold: '700',
+    extrabold: '800',
+    black: '900',
+  },
+  
+  // Line heights
+  lineHeight: {
+    tight: 1.25,
+    snug: 1.375,
+    normal: 1.5,
+    relaxed: 1.625,
+    loose: 2,
+  },
+  
+  // Letter spacing
+  letterSpacing: {
+    tighter: -0.05,
+    tight: -0.025,
+    normal: 0,
+    wide: 0.025,
+    wider: 0.05,
+    widest: 0.1,
+  },
+  
+  // Text styles
+  h1: {
+    fontSize: 32,
+    fontWeight: '700',
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  },
+  h2: {
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 32,
+    letterSpacing: -0.25,
+  },
+  h3: {
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 28,
+  },
+  h4: {
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  h5: {
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  h6: {
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  body1: {
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 24,
+  },
+  body2: {
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  caption: {
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16,
+  },
+  overline: {
+    fontSize: 10,
+    fontWeight: '600',
+    lineHeight: 16,
+    letterSpacing: 0.5,
+  },
+};
+
+// 🎯 Shadows
+export const Shadows = {
+  sm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  md: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  xl: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  '2xl': {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.25,
+    shadowRadius: 32,
+    elevation: 15,
+  },
+};
+
+// 🔄 Rounded corners
+export const BorderRadius = {
+  none: 0,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  '2xl': 20,
+  '3xl': 24,
+  full: 9999,
+};
+
+// 🎨 Theme Interface
+export interface Theme {
+  colors: ColorPalette;
+  spacing: typeof Spacing;
+  typography: typeof Typography;
+  shadows: typeof Shadows;
+  borderRadius: typeof BorderRadius;
+  mode: ThemeMode;
+}
+
+// 🎨 Theme Factory
+export const createTheme = (mode: ThemeMode): Theme => ({
+  colors: getColors(mode),
+  spacing: Spacing,
+  typography: Typography,
+  shadows: Shadows,
+  borderRadius: BorderRadius,
+  mode,
+});
+
+// 🎨 Default Theme
+export const Theme = createTheme('dark');
+
+// 🎨 Light Theme
+export const LightTheme = createTheme('light');
+
+// 🎨 Theme Context (for React)
+export interface ThemeContextType {
+  theme: Theme;
+  mode: ThemeMode;
+  setTheme: (mode: ThemeMode) => void;
+  toggleTheme: () => void;
+  isDark: boolean;
+  isLight: boolean;
+}
+
+export default Theme;
+  containers: {
+    screen: {
+      flex: 1,
+      backgroundColor: Colors.background.primary,
+    },
+    
+    card: {
+      backgroundColor: Colors.background.card,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.lg,
+      borderWidth: 1,
+      borderColor: Colors.border.primary,
+      ...Shadow.sm,
+    },
+    
+    modal: {
+      backgroundColor: Colors.background.modal,
+      borderRadius: BorderRadius.xl,
+      padding: Spacing.xl,
+      margin: Spacing.lg,
+      ...Shadow.lg,
+    },
+  },
+  
+  // Кнопки
+  buttons: {
+    primary: {
+      backgroundColor: Colors.primary,
+      borderRadius: BorderRadius.lg,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      alignItems: 'center' as const,
+      ...Shadow.sm,
+    },
+    
+    secondary: {
+      backgroundColor: Colors.background.card,
+      borderRadius: BorderRadius.lg,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      alignItems: 'center' as const,
+      borderWidth: 1,
+      borderColor: Colors.border.primary,
+    },
+    
+    danger: {
+      backgroundColor: Colors.danger,
+      borderRadius: BorderRadius.lg,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      alignItems: 'center' as const,
+      ...Shadow.sm,
+    },
+  },
+  
+  // Инпуты
+  inputs: {
+    default: {
+      backgroundColor: Colors.background.card,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: Colors.border.primary,
+      padding: Spacing.md,
+      color: Colors.text.primary,
+      fontSize: Typography.body.fontSize,
+    },
+    
+    focused: {
+      borderColor: Colors.primary,
+      borderWidth: 2,
+    },
+    
+    error: {
+      borderColor: Colors.danger,
+      borderWidth: 2,
+    },
+  },
+  
+  // Статистика
+  stats: {
+    container: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between',
+      backgroundColor: Colors.background.card,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.md,
+    },
+    
+    item: {
+      alignItems: 'center' as const,
+      flex: 1,
+    },
+    
+    icon: {
+      fontSize: 20,
+      marginBottom: Spacing.xs,
+    },
+    
+    value: {
+      fontSize: Typography.body.fontSize,
+      fontWeight: 'bold' as const,
+      color: Colors.text.primary,
+    },
+    
+    label: {
+      fontSize: Typography.caption.fontSize,
+      color: Colors.text.tertiary,
+      marginTop: Spacing.xs,
+    },
+  },
+};
+
+export const Animation = {
+  duration: {
+    fast: 200,
+    normal: 300,
+    slow: 500,
+  },
+  
+  easing: {
+    ease: 'ease' as const,
+    easeIn: 'ease-in' as const,
+    easeOut: 'ease-out' as const,
+    easeInOut: 'ease-in-out' as const,
+  },
+};
+
+// Темная тема (по умолчанию)
+export const Theme = {
+  Colors,
+  Spacing,
+  Typography,
+  BorderRadius,
+  Shadow,
+  CommonStyles,
+  Animation,
+};
+
+// Типы для TypeScript
+export type ThemeType = typeof Theme;
+export type ColorKeys = keyof typeof Colors;
+export type SpacingKeys = keyof typeof Spacing;
+export type TypographyKeys = keyof typeof Typography;

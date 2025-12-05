@@ -1,0 +1,718 @@
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, Button, Alert, Modal, TouchableOpacity } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { useNavigation } from '@react-navigation/native';
+import { useCharacter } from '../context/CharacterContext';
+import { useGame } from '../context/GameContext';
+import { generateEvent as generateAIGameEvent } from '../services/AIEngine';
+import { getFallbackEvent } from '../services/AIEngine';
+import { EventEffects, Event } from '../types';
+import WebGradient from '../components/WebGradient';
+
+type FinalStats = {
+  age: number;
+  wealth: number;
+  achievements: string[];
+  success?: boolean;
+  crystalsEarned?: number;
+};
+
+// Placeholder components
+const HUDComponent = (props: any) => <View><Text>HUD</Text></View>;
+const EventCardComponent = (props: any) => <View><Text>Event Card</Text></View>;
+
+const GameScreen = () => {
+  const gameState = useSelector((state: RootState) => state.game);
+  const dispatch = useDispatch();
+  const navigation = useNavigation();
+  const { character, updateAttributes } = useCharacter();
+  const { gameState: gameContextState, endGame } = useGame(); // Use GameContext state
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes
+  const [gameOver, setGameOver] = useState(false);
+  const [gameOverReason, setGameOverReason] = useState('');
+  const [finalStats, setFinalStats] = useState<FinalStats | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const eventCountRef = useRef<number>(0);
+  
+  // Generate game event
+  const generateEvent = async (characterData: any, gameStateData: any): Promise<Event> => {
+    try {
+      // Try to generate AI event first
+      const aiEvent = await generateAIGameEvent(characterData, gameStateData);
+      return aiEvent;
+    } catch (error) {
+      // Fallback to predefined event
+      return getFallbackEvent();
+    }
+  };
+  
+  // Age up the character
+  const ageUp = async (years: number) => {
+    if (!character) return;
+    
+    // Create a new character object with updated age
+    const updatedCharacter = {
+      ...character,
+      age: character.age + years,
+    };
+    
+    // Save the updated character (this is a simplified approach)
+    // In a real implementation, you'd have a proper updateCharacter function
+    console.log('Character aged up to:', updatedCharacter.age);
+  };
+  
+  // Get remaining game time
+  const getRemainingTime = () => {
+    if (!gameContextState?.gameStartTime) return 600;
+    const elapsed = Date.now() - gameContextState.gameStartTime;
+    const totalTime = 600; // 10 minutes in seconds
+    const remaining = Math.max(0, totalTime - Math.floor(elapsed / 1000));
+    return remaining;
+  };
+  
+  // Check risk outcome
+  const checkCRiskOutcome = (effects: EventEffects, gameStateData: any) => {
+    // Simple risk calculation - can be enhanced
+    const healthRisk = effects.health && effects.health < -50;
+    return { 
+      isDeath: healthRisk && character && character.health <= 0 
+    };
+  };
+  
+  // Handle game end
+  const handleGameEnd = async (success: boolean, reason: string) => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    setGameOver(true);
+    setGameOverReason(reason);
+    
+    if (character && gameContextState) {
+      const result = await endGame(character);
+      setFinalStats({
+        age: character.age,
+        wealth: character.wealth,
+        achievements: gameContextState.achievements || [],
+        success,
+        crystalsEarned: success ? 50 : 0, // Can be calculated based on performance
+      });
+    }
+  };
+
+  // Start game
+  const startGame = async () => {
+    setIsLoading(true);
+    
+    // Initialize game state
+    if (!character) {
+      Alert.alert('Error', 'No character found. Please create a character first.');
+      navigation.goBack();
+      return;
+    }
+
+    // Load first event
+    await loadNextEvent();
+    
+    setIsLoading(false);
+  };
+
+  // Timer
+  const startTimer = () => {
+    timerRef.current = setInterval(() => {
+      const remaining = getRemainingTime();
+      setTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        handleGameEnd(true, 'Time completed!');
+      }
+    }, 1000);
+  };
+
+  // Load next event
+  const loadNextEvent = async () => {
+    try {
+      setIsLoading(true);
+      
+      const event = await generateEvent(character, gameState);
+      setCurrentEvent(event);
+      eventCountRef.current += 1;
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error loading event:', error);
+      Alert.alert('Error', 'Failed to load event. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    startGame();
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+
+  // Handle choice function
+  const handleChoice = async (choice: string, customInput: string | null = null): Promise<void> => {
+    if (!currentEvent || isLoading) return;
+
+    try {
+      setIsLoading(true);
+
+      const choiceKey = choice as 'A' | 'B' | 'C' | 'D';
+      let effects = currentEvent.effects[choiceKey];
+      if (!effects && choiceKey === 'D') {
+        // For D choice, use default effects if not defined
+        effects = {} as EventEffects;
+      }
+      if (!effects) {
+        throw new Error(`Invalid choice: ${choice}`);
+      }
+      let outcome: { isDeath: boolean; effects: EventEffects; deathCause?: string } = {
+        isDeath: false,
+        effects,
+      };
+
+      // Для D-выбора (пользовательский) — запрашиваем AI оценку
+      if (choice === 'D' && customInput) {
+        const { evaluateCustomChoice } = require('../services/AIEngine');
+        const evaluation = await evaluateCustomChoice(customInput, currentEvent, character);
+
+        // Показываем объяснение AI
+        Alert.alert(
+          evaluation.isValid ? '✅ Choice Accepted' : '❌ Choice Rejected',
+          evaluation.explanation,
+          [{ text: 'OK', onPress: () => {} }],
+        );
+
+        effects = evaluation.effects;
+        if (effects) {
+          outcome.effects = effects;
+        }
+      }
+
+      // Для C-выбора проверяем риск смерти
+      if (choice === 'C' && effects?.deathChance) {
+        const riskOutcome = checkCRiskOutcome(effects, gameState);
+        outcome = { ...outcome, ...riskOutcome };
+      }
+
+      // Apply effects to character
+      if (character && outcome.effects) {
+        await updateAttributes(outcome.effects);
+      }
+
+      // Check for death
+      const updatedCharacter = character; // In real implementation, this would be the updated character
+      if (outcome.isDeath || (updatedCharacter && updatedCharacter.health <= 0)) {
+        const deathCause = outcome.deathCause || 'Health reached zero';
+        handleGameEnd(false, deathCause);
+        return;
+      }
+
+      // Load next event
+      await loadNextEvent();
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error processing choice:', error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  // Simple game state display
+  const playerStats = {
+    health: gameState?.player?.health || 100,
+    energy: gameState?.player?.energy || 100,
+    money: gameState?.player?.money || 100,
+    day: gameState?.currentDay || 1
+  };
+
+  // Game Over Modal
+  const GameOverModal = () => (
+    <Modal visible={gameOver} transparent animationType="fade">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Game Over</Text>
+          <Text style={styles.modalText}>{gameOverReason}</Text>
+          {finalStats && (
+            <View style={styles.statsContainer}>
+              <Text style={styles.statText}>Age: {finalStats.age}</Text>
+              <Text style={styles.statText}>Wealth: ${finalStats.wealth}</Text>
+              <Text style={styles.statText}>Crystals Earned: {finalStats.crystalsEarned}</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.modalButtonText}>Back to Menu</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Render function
+  if (isLoading && !currentEvent) {
+    return (
+      <WebGradient colors={['#0f172a', '#1e293b']} style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Generating life event...</Text>
+        </View>
+      </WebGradient>
+    );
+  }
+
+  return (
+    <WebGradient colors={['#0f172a', '#1e293b']} style={styles.container}>
+      {/* HUD */}
+      <View style={styles.hudContainer}>
+        <View style={styles.hud}>
+          <Text style={styles.hudText}>Age: {character?.age || 0}</Text>
+          <Text style={styles.hudText}>Health: {character?.health || 0}</Text>
+          <Text style={styles.hudText}>Wealth: ${character?.wealth || 0}</Text>
+          <Text style={styles.hudText}>Time: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</Text>
+        </View>
+      </View>
+
+      {/* Event Card */}
+      <View style={styles.eventContainer}>
+        {currentEvent && (
+          <View style={styles.eventCard}>
+            <Text style={styles.eventText}>{currentEvent.situation}</Text>
+            <View style={styles.choicesContainer}>
+              <TouchableOpacity 
+                style={[styles.choiceButton, styles.choiceA]} 
+                onPress={() => handleChoice('A')}
+                disabled={isLoading}
+              >
+                <Text style={styles.choiceText}>{currentEvent.A}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.choiceButton, styles.choiceB]} 
+                onPress={() => handleChoice('B')}
+                disabled={isLoading}
+              >
+                <Text style={styles.choiceText}>{currentEvent.B}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.choiceButton, styles.choiceC]} 
+                onPress={() => handleChoice('C')}
+                disabled={isLoading}
+              >
+                <Text style={styles.choiceText}>{currentEvent.C}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.choiceButton, styles.choiceD]} 
+                onPress={() => handleChoice('D')}
+                disabled={isLoading}
+              >
+                <Text style={styles.choiceText}>{currentEvent.D}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <Text style={styles.loadingText}>Processing...</Text>
+        </View>
+      )}
+
+      {/* Game Over Modal */}
+      <GameOverModal />
+
+      {/* Quit Button */}
+      <TouchableOpacity
+        style={styles.quitButton}
+        onPress={() => {
+          Alert.alert('Quit Game', 'Are you sure? Progress will be lost.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Quit', onPress: () => navigation.goBack(), style: 'destructive' },
+          ]);
+        }}
+      >
+        <Text style={styles.quitButtonText}>❌ Quit</Text>
+      </TouchableOpacity>
+    </WebGradient>
+  );
+          [{ text: 'OK', onPress: () => {} }],
+        );
+
+        effects = evaluation.effects;
+        if (effects) {
+          outcome.effects = effects;
+        }
+      }
+
+      // Для C-выбора проверяем риск смерти
+      if (choice === 'C' && effects?.deathChance) {
+        const riskOutcome = checkCRiskOutcome(effects, gameState);
+        outcome = { ...outcome, ...riskOutcome };
+      }
+
+      // Apply effects to character
+      if (character && outcome.effects) {
+        await updateAttributes(outcome.effects);
+      }
+
+      // Check for death
+      const updatedCharacter = character; // In real implementation, this would be the updated character
+      if (outcome.isDeath || (updatedCharacter && updatedCharacter.health <= 0)) {
+        const deathCause = outcome.deathCause || 'Health reached zero';
+        handleGameEnd(false, deathCause);
+        return;
+      }
+
+      // Load next event
+      await loadNextEvent();
+      setLoading(false);
+
+      // Следующее событие
+      await loadNextEvent();
+    } catch (error) {
+      console.error('Error processing choice:', error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  // Рендер Game Over модала
+  const GameOverModal = () => (
+    <Modal visible={gameOver} animationType="fade" transparent>
+      <View style={styles.modalOverlay}>
+        <LinearGradient
+          colors={finalStats?.success ? ['#22c55e', '#16a34a'] : ['#ef4444', '#dc2626']}
+          style={styles.gameOverContainer}
+        >
+          <Text style={styles.gameOverTitle}>
+            {finalStats?.success ? '🎉 Victory!' : '💀 Game Over'}
+          </Text>
+
+          <Text style={styles.gameOverReason}>{gameOverReason}</Text>
+
+          <View style={styles.finalStatsContainer}>
+            <View style={styles.finalStat}>
+              <Text style={styles.finalStatLabel}>Age Reached</Text>
+              <Text style={styles.finalStatValue}>{finalStats?.age} years</Text>
+            </View>
+            <View style={styles.finalStat}>
+              <Text style={styles.finalStatLabel}>Final Wealth</Text>
+              <Text style={styles.finalStatValue}>${finalStats?.wealth}</Text>
+            </View>
+            <View style={styles.finalStat}>
+              <Text style={styles.finalStatLabel}>Crystals Earned</Text>
+              <Text style={styles.finalStatValue}>💎 {finalStats?.crystalsEarned}</Text>
+            </View>
+          </View>
+
+          <View style={styles.gameOverButtons}>
+            <TouchableOpacity
+              style={styles.gameOverButton}
+              onPress={() => {
+                setGameOver(false);
+                navigation.goBack();
+              }}
+            >
+              <Text style={styles.gameOverButtonText}>Main Menu</Text>
+            </TouchableOpacity>
+
+            {!finalStats?.success && (
+              <TouchableOpacity
+                style={[styles.gameOverButton, styles.rewindButton]}
+                onPress={() => {
+                  // TODO: Implement Rewind with IAP
+                  Alert.alert('Rewind', 'Coming soon: Rewind feature with IAP');
+                }}
+              >
+                <Text style={styles.gameOverButtonText}>⏮️ Rewind (💎 50)</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </LinearGradient>
+      </View>
+    </Modal>
+  );
+
+  if (isLoading && !currentEvent) {
+    return (
+      <WebGradient colors={['#0f172a', '#1e293b']} style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Generating life event...</Text>
+        </View>
+      </WebGradient>
+    );
+  }
+
+  return (
+    <WebGradient colors={['#0f172a', '#1e293b']} style={styles.container}>
+      {/* HUD */}
+      <View style={styles.hudContainer}>
+        <View style={styles.hud}>
+          <Text style={styles.hudText}>Age: {character?.age || 0}</Text>
+          <Text style={styles.hudText}>Health: {character?.health || 0}</Text>
+          <Text style={styles.hudText}>Wealth: ${character?.wealth || 0}</Text>
+          <Text style={styles.hudText}>Time: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</Text>
+        </View>
+      </View>
+
+      {/* Event Card */}
+      <View style={styles.eventContainer}>
+        {currentEvent && (
+          <View style={styles.eventCard}>
+            <Text style={styles.eventText}>{currentEvent.situation}</Text>
+            <View style={styles.choicesContainer}>
+              <TouchableOpacity 
+                style={[styles.choiceButton, styles.choiceA]} 
+                onPress={() => handleChoice('A')}
+                disabled={isLoading}
+              >
+                <Text style={styles.choiceText}>{currentEvent.A}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.choiceButton, styles.choiceB]} 
+                onPress={() => handleChoice('B')}
+                disabled={isLoading}
+              >
+                <Text style={styles.choiceText}>{currentEvent.B}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.choiceButton, styles.choiceC]} 
+                onPress={() => handleChoice('C')}
+                disabled={isLoading}
+              >
+                <Text style={styles.choiceText}>{currentEvent.C}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.choiceButton, styles.choiceD]} 
+                onPress={() => handleChoice('D')}
+                disabled={isLoading}
+              >
+                <Text style={styles.choiceText}>{currentEvent.D}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+
+        {/* Loading Overlay */}
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <Text style={styles.loadingText}>Processing...</Text>
+          </View>
+        )}
+
+        {/* Game Over Modal */}
+        <GameOverModal />
+
+        {/* Quit Button */}
+        <TouchableOpacity
+          style={styles.quitButton}
+          onPress={() => {
+            Alert.alert('Quit Game', 'Are you sure? Progress will be lost.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Quit', onPress: () => navigation.goBack(), style: 'destructive' },
+            ]);
+          }}
+        >
+          <Text style={styles.quitButtonText}>❌ Quit</Text>
+        </TouchableOpacity>
+    </WebGradient>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  gradient: {
+    flex: 1,
+    paddingTop: 50,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#f8fafc',
+  },
+  hudContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  eventContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quitButton: {
+    position: 'absolute',
+    top: 10,
+    right: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  quitButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  gameOverContainer: {
+    width: '100%',
+    padding: 30,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  gameOverTitle: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 16,
+  },
+  gameOverReason: {
+    fontSize: 18,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  finalStatsContainer: {
+    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+  },
+  finalStat: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  finalStatLabel: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  finalStatValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  gameOverButtons: {
+    width: '100%',
+    gap: 12,
+  },
+  gameOverButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  rewindButton: {
+    backgroundColor: '#fbbf24',
+  },
+  gameOverButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  // New styles for interactive components
+  hudContainer: {
+    padding: 20,
+  },
+  hud: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    padding: 15,
+    borderRadius: 10,
+  },
+  hudText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  eventContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  eventCard: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+    borderRadius: 15,
+  },
+  eventText: {
+    color: '#ffffff',
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  choicesContainer: {
+    gap: 10,
+  },
+  choiceButton: {
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  choiceA: {
+    backgroundColor: '#3b82f6',
+  },
+  choiceB: {
+    backgroundColor: '#10b981',
+  },
+  choiceC: {
+    backgroundColor: '#f59e0b',
+  },
+  choiceD: {
+    backgroundColor: '#ef4444',
+  },
+  choiceText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  quitButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+    padding: 10,
+    borderRadius: 20,
+  },
+  quitButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+  },
+});
+
+export default GameScreen;

@@ -1,0 +1,11 @@
+node_modules
+build
+dist
+.eslintrc.js
+.expo
+.expo-shared
+coverage
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.svg

@@ -5,6 +5,9 @@
 // Получить ключ: https://app.adapty.io/
 const ADAPTY_PUBLIC_KEY = 'YOUR_ADAPTY_PUBLIC_KEY_HERE';
 
+// Импорт Adapty SDK (требует установки: npm install react-native-adapty)
+import { adapty } from 'react-native-adapty';
+
 // Пакеты Rewind (цены в USD)
 export const REWIND_PACKAGES = {
   REWIND_SMALL: {
@@ -44,12 +47,10 @@ export const initializeAdapty = async () => {
       return false;
     }
 
-    // TODO: Интеграция реального Adapty SDK
-    // Требует установки: npm install react-native-adapty
-    // import { adapty } from 'react-native-adapty';
-    // await adapty.activate(ADAPTY_PUBLIC_KEY);
-    
-    console.log('Adapty initialized (mock)');
+    // Интеграция реального Adapty SDK
+    await adapty.activate(ADAPTY_PUBLIC_KEY);
+
+    console.log('Adapty initialized successfully');
     return true;
   } catch (error) {
     console.error('Adapty initialization failed:', error);
@@ -63,15 +64,13 @@ export const initializeAdapty = async () => {
  */
 export const getAvailableProducts = async () => {
   try {
-    // TODO: Реальный запрос к Adapty
-    // const paywalls = await adapty.getPaywalls();
-    // return paywalls[0].products;
-
-    // Mock данные
-    return Object.values(REWIND_PACKAGES);
+    // Реальный запрос к Adapty
+    const paywalls = await adapty.getPaywalls();
+    return paywalls[0].products;
   } catch (error) {
     console.error('Failed to fetch products:', error);
-    return [];
+    // Fallback к mock данным
+    return Object.values(REWIND_PACKAGES);
   }
 };
 
@@ -84,19 +83,13 @@ export const getAvailableProducts = async () => {
 export const purchaseRewind = async (packageId, onSuccess, onError) => {
   try {
     const package_ = REWIND_PACKAGES[packageId];
-    
+
     if (!package_) {
       throw new Error('Invalid package ID');
     }
 
-    // TODO: Реальная покупка через Adapty
-    // const result = await adapty.makePurchase(package_.adaptyId);
-    
-    // Mock успешная покупка для тестирования
-    console.log(`Mock purchase: ${package_.name} for $${package_.price}`);
-    
-    // Симулируем задержку
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Реальная покупка через Adapty
+    const result = await adapty.makePurchase(package_.adaptyId);
 
     if (onSuccess) {
       onSuccess({
@@ -150,7 +143,7 @@ export const restorePurchases = async () => {
   try {
     // TODO: Реальное восстановление через Adapty
     // const result = await adapty.restorePurchases();
-    
+
     console.log('Purchases restored (mock)');
     return {
       success: true,
@@ -174,7 +167,7 @@ export const checkPremiumStatus = async () => {
     // TODO: Проверка через Adapty
     // const profile = await adapty.getProfile();
     // return profile.accessLevels.premium?.isActive || false;
-    
+
     return false; // По умолчанию нет премиума
   } catch (error) {
     console.error('Premium check failed:', error);

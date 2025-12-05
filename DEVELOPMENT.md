@@ -46,6 +46,7 @@
 ```
 
 **Рекомендации**:
+
 - ID должен быть уникальным
 - Эффекты A: -10 до +10, богатство до ±500
 - Эффекты B: -15 до +15, богатство до ±1000
@@ -62,10 +63,10 @@ export const HISTORICAL_EVENTS = {
     2030: {
       event: 'Краткое название',
       description: 'Детальное описание события',
-      effects: { 
-        health: 1.0,    // множитель (1.0 = без изменений)
-        wealth: 0.8,    // 0.8 = -20% к богатству
-        happiness: 1.2  // 1.2 = +20% к счастью
+      effects: {
+        health: 1.0, // множитель (1.0 = без изменений)
+        wealth: 0.8, // 0.8 = -20% к богатству
+        happiness: 1.2, // 1.2 = +20% к счастью
       },
       tags: ['economic', 'crisis', 'war', 'prosperity', 'pandemic', 'disaster'],
     },
@@ -83,6 +84,7 @@ export const HISTORICAL_EVENTS = {
 ```
 
 **Эффекты**:
+
 - `< 0.7` - катастрофическое влияние
 - `0.7 - 0.9` - негативное влияние
 - `0.9 - 1.1` - нейтральное
@@ -96,19 +98,20 @@ export const HISTORICAL_EVENTS = {
 ```javascript
 export const LEVELS = {
   // ... существующие уровни ...
-  
+
   LEVEL_6: {
     id: 'level_6',
     name: 'Level 6: Extreme',
-    duration: 14400,        // секунды (4 часа)
+    duration: 14400, // секунды (4 часа)
     requiredCrystals: 2000, // кристаллы для разблокировки
-    deathChance: 0.7,       // 70% шанс смерти на C-выборе
+    deathChance: 0.7, // 70% шанс смерти на C-выборе
     unlocked: false,
   },
 };
 ```
 
 **Параметры**:
+
 - `duration`: секунды (60 = 1 минута, 3600 = 1 час)
 - `requiredCrystals`: 0 для бесплатных уровней
 - `deathChance`: 0.1 (10%) до 0.9 (90%)
@@ -132,6 +135,7 @@ export const LEVELS = {
 ```
 
 **Типы условий**:
+
 - `games_completed`: Количество завершенных игр
 - `max_age`: Максимальный достигнутый возраст
 - `max_wealth`: Максимальное богатство
@@ -148,8 +152,8 @@ export const LEVELS = {
 
 ```javascript
 const PROFESSIONS = [
-  'PMP', 
-  'Programmer', 
+  'PMP',
+  'Programmer',
   'Doctor',
   'New Profession', // <- добавьте здесь
 ];
@@ -159,8 +163,8 @@ const PROFESSIONS = [
 
 ```javascript
 const PROFESSION_BONUSES = {
-  'Doctor': { health: 10, skills: 5 },
-  'Programmer': { skills: 10, wealth: 500 },
+  Doctor: { health: 10, skills: 5 },
+  Programmer: { skills: 10, wealth: 500 },
   'New Profession': { happiness: 10, wealth: 200 },
 };
 ```
@@ -168,18 +172,22 @@ const PROFESSION_BONUSES = {
 ### 6. Добавление новой страны
 
 **Шаг 1**: `src/screens/MainScreen.js`
+
 ```javascript
 const COUNTRIES = [
-  'USA', 'Russia', 'China', 
+  'USA',
+  'Russia',
+  'China',
   'New Country', // <- добавьте здесь
 ];
 ```
 
 **Шаг 2**: `src/services/HistoricalEvents.js`
+
 ```javascript
 export const HISTORICAL_EVENTS = {
   // ... существующие ...
-  
+
   'New Country': {
     2000: {
       event: 'Millennium Celebration',
@@ -219,17 +227,19 @@ Generate realistic event with 3 choices...`;
 **Файл**: `src/services/MonetizationService.js`
 
 **Изменить цены**:
+
 ```javascript
 export const REWIND_PACKAGES = {
   REWIND_SMALL: {
     id: 'rewind_small',
     steps: 5,
-    price: 0.99,  // <- измените цену
+    price: 0.99, // <- измените цену
   },
 };
 ```
 
 **Изменить стоимость в кристаллах**:
+
 ```javascript
 export const CRYSTAL_REWIND_COST = 50; // <- измените здесь
 ```
@@ -237,6 +247,7 @@ export const CRYSTAL_REWIND_COST = 50; // <- измените здесь
 ### 9. Добавление нового экрана
 
 **Шаг 1**: Создайте файл `src/screens/NewScreen.js`
+
 ```javascript
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -266,17 +277,15 @@ export default NewScreen;
 ```
 
 **Шаг 2**: Добавьте в навигацию `App.js`
+
 ```javascript
 import NewScreen from './src/screens/NewScreen';
 
-<Stack.Screen
-  name="NewScreen"
-  component={NewScreen}
-  options={{ title: 'New Screen' }}
-/>
+<Stack.Screen name="NewScreen" component={NewScreen} options={{ title: 'New Screen' }} />;
 ```
 
 **Шаг 3**: Переход на новый экран
+
 ```javascript
 navigation.navigate('NewScreen');
 ```
@@ -288,11 +297,11 @@ navigation.navigate('NewScreen');
 ```javascript
 export const logEvent = (eventName, params = {}) => {
   console.log(`Event: ${eventName}`, params);
-  
+
   // Добавьте свою аналитику:
   // Firebase Analytics:
   // analytics().logEvent(eventName, params);
-  
+
   // Amplitude:
   // amplitude.logEvent(eventName, params);
 };
@@ -301,6 +310,7 @@ export const logEvent = (eventName, params = {}) => {
 ### 11. Кастомизация UI тем
 
 Создайте `src/styles/theme.js`:
+
 ```javascript
 export const THEME = {
   colors: {
@@ -330,16 +340,19 @@ export const THEME = {
 ```
 
 Используйте в компонентах:
+
 ```javascript
 import { THEME } from '../styles/theme';
 
-<View style={{ backgroundColor: THEME.colors.background }} />
+<View style={{ backgroundColor: THEME.colors.background }} />;
 ```
 
 ## 🧪 Тестирование новых функций
 
 ### Debug режим
+
 В `App.js` добавьте:
+
 ```javascript
 const DEBUG = __DEV__;
 
@@ -350,7 +363,9 @@ if (DEBUG) {
 ```
 
 ### Быстрое тестирование событий
+
 В `GameScreen.js`:
+
 ```javascript
 // Пропустить таймер для быстрого тестирования
 const FAST_MODE = __DEV__;
@@ -360,11 +375,13 @@ if (FAST_MODE) {
 ```
 
 ### Тестирование смерти
+
 В `AIEngine.js` временно увеличьте `deathChance` до 1.0 для C-выбора.
 
 ## 📦 Публикация обновлений
 
 ### Over-the-Air (OTA) обновления с Expo
+
 ```bash
 # Опубликовать изменения без новой сборки
 eas update --branch production --message "Bug fixes"

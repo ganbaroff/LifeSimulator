@@ -165,7 +165,7 @@ export const HISTORICAL_EVENTS = {
       effects: { health: 0.9, wealth: 0.8, happiness: 1.3 },
       tags: ['independence'],
     },
-    1947: {
+    1948: {
       event: 'Partition',
       description: 'Violent partition with Pakistan',
       effects: { health: 0.5, wealth: 0.6, happiness: 0.4 },
@@ -346,7 +346,7 @@ export const applyHistoricalEffects = (baseEffects, historicalEvent) => {
   if (!historicalEvent) return baseEffects;
 
   const modified = { ...baseEffects };
-  
+
   // Применяем множители из исторического события
   if (modified.health !== undefined) {
     modified.health = Math.floor(modified.health * historicalEvent.effects.health);
@@ -364,7 +364,7 @@ export const applyHistoricalEffects = (baseEffects, historicalEvent) => {
 // ФУНКЦИЯ: Генерация исторического контекста для AI промпта
 export const generateHistoricalPromptContext = (country, year, age) => {
   const event = getHistoricalContext(country, year);
-  
+
   if (!event) {
     return `It is ${year} in ${country}. Normal peacetime conditions.`;
   }

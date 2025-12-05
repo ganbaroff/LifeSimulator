@@ -1,0 +1,113 @@
+{
+  "app_name": "LifeSim GSL",
+  "welcome": "Bienvenido a LifeSim GSL",
+  "start_game": "Comenzar juego",
+  "continue": "Continuar",
+  "settings": "Configuración",
+  "quit": "Salir",
+
+  "character_creation": "Creación de personaje",
+  "name": "Nombre",
+  "country": "País",
+  "birth_year": "Año de nacimiento",
+  "profession": "Profesión",
+  "create_character": "Crear personaje",
+
+  "attributes": {
+    "health": "Salud",
+    "happiness": "Felicidad",
+    "wealth": "Riqueza",
+    "skills": "Habilidades"
+  },
+
+  "game": {
+    "age": "Edad",
+    "year": "Año",
+    "level": "Nivel",
+    "crystals": "Cristales",
+    "time_remaining": "Tiempo restante"
+  },
+
+  "choices": {
+    "choice_a": "Opción A",
+    "choice_b": "Opción B",
+    "choice_c": "Opción C (Arriesgada)",
+    "choice_d": "Tu elección"
+  },
+
+  "game_over": {
+    "victory": "¡Victoria!",
+    "defeat": "Juego terminado",
+    "age_reached": "Edad alcanzada",
+    "final_wealth": "Riqueza final",
+    "crystals_earned": "Cristales ganados",
+    "main_menu": "Menú principal",
+    "rewind": "Rebobinar"
+  },
+
+  "settings_screen": {
+    "title": "Configuración",
+    "audio": "Audio",
+    "sound_effects": "Efectos de sonido",
+    "background_music": "Música de fondo",
+    "game": "Juego",
+    "ai_events": "Eventos AI",
+    "ai_description": "Generar eventos usando AI (requiere clave API)",
+    "notifications": "Notificaciones",
+    "daily_reminders": "Recordatorios diarios",
+    "reminder_description": "Recibir recordatorios para jugar cada día",
+    "privacy": "Privacidad",
+    "analytics": "Analíticas",
+    "analytics_description": "Ayúdanos a mejorar el juego",
+    "cloud_save": "Guardado en la nube",
+    "sync_cloud": "Sincronizar con la nube",
+    "danger_zone": "Zona de peligro",
+    "reset_progress": "Restablecer todo el progreso",
+    "reset_confirm": "¿Estás seguro? Esto eliminará todo tu progreso y no se puede deshacer.",
+    "back": "Atrás"
+  },
+
+  "shop": {
+    "title": "Tienda de cristales",
+    "popular": "POPULAR",
+    "best_value": "MEJOR VALOR",
+    "buy": "COMPRAR",
+    "footer": "Las compras se procesan de forma segura a través de tu tienda de aplicaciones"
+  },
+
+  "ads": {
+    "watch_ad": "Ver anuncio",
+    "reward_earned": "¡Recompensa ganada!",
+    "received_crystals": "¡Recibiste {{amount}} cristales!",
+    "ad_not_ready": "Anuncio no disponible",
+    "try_again": "Por favor, inténtalo de nuevo en un momento"
+  },
+
+  "errors": {
+    "oops": "¡Ups!",
+    "something_wrong": "Algo salió mal. Hemos sido notificados y lo arreglaremos pronto.",
+    "try_again": "Intentar de nuevo",
+    "error": "Error",
+    "failed_load": "Error al cargar. Por favor, inténtalo de nuevo."
+  },
+
+  "countries": {
+    "USA": "EE.UU.",
+    "Russia": "Rusia",
+    "China": "China",
+    "India": "India",
+    "Germany": "Alemania",
+    "Japan": "Japón",
+    "Brazil": "Brasil"
+  },
+
+  "professions": {
+    "student": "Estudiante",
+    "engineer": "Ingeniero",
+    "doctor": "Doctor",
+    "teacher": "Profesor",
+    "artist": "Artista",
+    "entrepreneur": "Emprendedor",
+    "unemployed": "Desempleado"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "app_name": "LifeSim GSL",
+  "welcome": "Добро пожаловать в LifeSim GSL",
+  "start_game": "Начать игру",
+  "continue": "Продолжить",
+  "settings": "Настройки",
+  "quit": "Выход",
+
+  "character_creation": "Создание персонажа",
+  "name": "Имя",
+  "country": "Страна",
+  "birth_year": "Год рождения",
+  "profession": "Профессия",
+  "create_character": "Создать персонажа",
+
+  "attributes": {
+    "health": "Здоровье",
+    "happiness": "Счастье",
+    "wealth": "Богатство",
+    "skills": "Навыки"
+  },
+
+  "game": {
+    "age": "Возраст",
+    "year": "Год",
+    "level": "Уровень",
+    "crystals": "Кристаллы",
+    "time_remaining": "Осталось времени"
+  },
+
+  "choices": {
+    "choice_a": "Выбор A",
+    "choice_b": "Выбор B",
+    "choice_c": "Выбор C (Рискованный)",
+    "choice_d": "Ваш выбор"
+  },
+
+  "game_over": {
+    "victory": "Победа!",
+    "defeat": "Игра окончена",
+    "age_reached": "Достигнутый возраст",
+    "final_wealth": "Итоговое богатство",
+    "crystals_earned": "Получено кристаллов",
+    "main_menu": "Главное меню",
+    "rewind": "Перемотка"
+  },
+
+  "settings_screen": {
+    "title": "Настройки",
+    "audio": "Аудио",
+    "sound_effects": "Звуковые эффекты",
+    "background_music": "Фоновая музыка",
+    "game": "Игра",
+    "ai_events": "AI события",
+    "ai_description": "Генерация событий с помощью AI (требуется API ключ)",
+    "notifications": "Уведомления",
+    "daily_reminders": "Ежедневные напоминания",
+    "reminder_description": "Получать напоминания играть каждый день",
+    "privacy": "Конфиденциальность",
+    "analytics": "Аналитика",
+    "analytics_description": "Помогите нам улучшить игру",
+    "cloud_save": "Облачное сохранение",
+    "sync_cloud": "Синхронизация с облаком",
+    "danger_zone": "Опасная зона",
+    "reset_progress": "Сбросить весь прогресс",
+    "reset_confirm": "Вы уверены? Это удалит весь ваш прогресс и не может быть отменено.",
+    "back": "Назад"
+  },
+
+  "shop": {
+    "title": "Магазин кристаллов",
+    "popular": "ПОПУЛЯРНОЕ",
+    "best_value": "ЛУЧШАЯ ЦЕНА",
+    "buy": "КУПИТЬ",
+    "footer": "Покупки обрабатываются безопасно через магазин приложений"
+  },
+
+  "ads": {
+    "watch_ad": "Посмотреть рекламу",
+    "reward_earned": "Награда получена!",
+    "received_crystals": "Вы получили {{amount}} кристаллов!",
+    "ad_not_ready": "Реклама не готова",
+    "try_again": "Пожалуйста, попробуйте снова через мгновение"
+  },
+
+  "errors": {
+    "oops": "Упс!",
+    "something_wrong": "Что-то пошло не так. Мы уведомлены и скоро исправим это.",
+    "try_again": "Попробовать снова",
+    "error": "Ошибка",
+    "failed_load": "Не удалось загрузить. Пожалуйста, попробуйте снова."
+  },
+
+  "countries": {
+    "USA": "США",
+    "Russia": "Россия",
+    "China": "Китай",
+    "India": "Индия",
+    "Germany": "Германия",
+    "Japan": "Япония",
+    "Brazil": "Бразилия"
+  },
+
+  "professions": {
+    "student": "Студент",
+    "engineer": "Инженер",
+    "doctor": "Врач",
+    "teacher": "Учитель",
+    "artist": "Художник",
+    "entrepreneur": "Предприниматель",
+    "unemployed": "Безработный"
+  }
+}

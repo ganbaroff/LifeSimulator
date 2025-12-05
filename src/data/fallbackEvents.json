@@ -7,15 +7,15 @@
     "choices": {
       "A": {
         "text": "Take the music lessons (safe)",
-        "effects": {"health": 0, "happiness": -5, "wealth": 0, "skills": 10}
+        "effects": { "health": 0, "happiness": -5, "wealth": 0, "energy": 5 }
       },
       "B": {
         "text": "Negotiate: lessons twice a week, play other days",
-        "effects": {"health": 5, "happiness": 5, "wealth": 0, "skills": 5}
+        "effects": { "health": 5, "happiness": 5, "wealth": 0, "energy": 5 }
       },
       "C": {
         "text": "Refuse completely, play outside every day",
-        "effects": {"health": 10, "happiness": 10, "wealth": 0, "skills": -5}
+        "effects": { "health": 10, "happiness": 10, "wealth": 0, "energy": -5 }
       }
     }
   },
@@ -27,15 +27,15 @@
     "choices": {
       "A": {
         "text": "Tell a teacher immediately",
-        "effects": {"health": 0, "happiness": -5, "wealth": 0, "skills": 5}
+        "effects": { "health": 0, "happiness": -5, "wealth": 0, "energy": 5 }
       },
       "B": {
         "text": "Give the money to avoid trouble",
-        "effects": {"health": 0, "happiness": -10, "wealth": -20, "skills": 0}
+        "effects": { "health": 0, "happiness": -10, "wealth": -20, "energy": 0 }
       },
       "C": {
         "text": "Stand up and fight the bully",
-        "effects": {"health": -15, "happiness": 5, "wealth": 0, "skills": 10, "deathChance": 0.05}
+        "effects": { "health": -15, "happiness": 5, "wealth": 0, "energy": 10, "deathChance": 0.05 }
       }
     }
   },
@@ -47,15 +47,21 @@
     "choices": {
       "A": {
         "text": "Stay in school, study hard",
-        "effects": {"health": 0, "happiness": -5, "wealth": 0, "skills": 10}
+        "effects": { "health": 0, "happiness": -5, "wealth": 0, "energy": 5 }
       },
       "B": {
         "text": "Skip once, but make it count",
-        "effects": {"health": 0, "happiness": 10, "wealth": -10, "skills": -5}
+        "effects": { "health": 0, "happiness": 10, "wealth": -10, "energy": -5 }
       },
       "C": {
         "text": "Skip regularly, live freely",
-        "effects": {"health": -5, "happiness": 15, "wealth": -20, "skills": -15, "deathChance": 0.1}
+        "effects": {
+          "health": -5,
+          "happiness": 15,
+          "wealth": -20,
+          "energy": -15,
+          "deathChance": 0.1
+        }
       }
     }
   },
@@ -67,15 +73,21 @@
     "choices": {
       "A": {
         "text": "Take stable fast food job",
-        "effects": {"health": -5, "happiness": -5, "wealth": 200, "skills": 5}
+        "effects": { "health": -5, "happiness": -5, "wealth": 200, "energy": 5 }
       },
       "B": {
         "text": "Try freelancing online",
-        "effects": {"health": 0, "happiness": 5, "wealth": 150, "skills": 15}
+        "effects": { "health": 0, "happiness": 5, "wealth": 150, "energy": 15 }
       },
       "C": {
         "text": "High-risk street hustling",
-        "effects": {"health": -10, "happiness": -10, "wealth": 500, "skills": 10, "deathChance": 0.2}
+        "effects": {
+          "health": -10,
+          "happiness": -10,
+          "wealth": 500,
+          "energy": 10,
+          "deathChance": 0.2
+        }
       }
     }
   },
@@ -87,15 +99,21 @@
     "choices": {
       "A": {
         "text": "Take student loan, finish degree",
-        "effects": {"health": -5, "happiness": 5, "wealth": -5000, "skills": 20}
+        "effects": { "health": -5, "happiness": 5, "wealth": -5000, "energy": 20 }
       },
       "B": {
         "text": "Work part-time, study part-time",
-        "effects": {"health": -10, "happiness": -5, "wealth": -2000, "skills": 15}
+        "effects": { "health": -10, "happiness": -5, "wealth": -2000, "energy": 15 }
       },
       "C": {
         "text": "Drop out, start a business",
-        "effects": {"health": -15, "happiness": 10, "wealth": -1000, "skills": 25, "deathChance": 0.15}
+        "effects": {
+          "health": -15,
+          "happiness": 10,
+          "wealth": -1000,
+          "energy": 25,
+          "deathChance": 0.15
+        }
       }
     }
   },
@@ -107,15 +125,21 @@
     "choices": {
       "A": {
         "text": "Keep current 40hr/week job",
-        "effects": {"health": 0, "happiness": 5, "wealth": 100, "skills": 5}
+        "effects": { "health": 0, "happiness": 5, "wealth": 100, "energy": 5 }
       },
       "B": {
         "text": "Accept promotion, work harder",
-        "effects": {"health": -10, "happiness": -5, "wealth": 500, "skills": 15}
+        "effects": { "health": -10, "happiness": -5, "wealth": 500, "energy": 15 }
       },
       "C": {
         "text": "Quit, join risky startup",
-        "effects": {"health": -15, "happiness": 10, "wealth": -500, "skills": 25, "deathChance": 0.2}
+        "effects": {
+          "health": -15,
+          "happiness": 10,
+          "wealth": -500,
+          "energy": 25,
+          "deathChance": 0.2
+        }
       }
     }
   },
@@ -127,15 +151,21 @@
     "choices": {
       "A": {
         "text": "Safe index fund investment",
-        "effects": {"health": 0, "happiness": 5, "wealth": 800, "skills": 5}
+        "effects": { "health": 0, "happiness": 5, "wealth": 800, "energy": 5 }
       },
       "B": {
         "text": "Real estate down payment",
-        "effects": {"health": -5, "happiness": 5, "wealth": 1500, "skills": 10}
+        "effects": { "health": -5, "happiness": 5, "wealth": 1500, "energy": 10 }
       },
       "C": {
         "text": "All-in on cryptocurrency",
-        "effects": {"health": -10, "happiness": -15, "wealth": 5000, "skills": 15, "deathChance": 0.25}
+        "effects": {
+          "health": -10,
+          "happiness": -15,
+          "wealth": 5000,
+          "energy": 15,
+          "deathChance": 0.25
+        }
       }
     }
   },
@@ -147,15 +177,21 @@
     "choices": {
       "A": {
         "text": "Wait a few more years",
-        "effects": {"health": 0, "happiness": -10, "wealth": 500, "skills": 5}
+        "effects": { "health": 0, "happiness": -10, "wealth": 500, "energy": 5 }
       },
       "B": {
         "text": "Have one child now",
-        "effects": {"health": -5, "happiness": 10, "wealth": -3000, "skills": 0}
+        "effects": { "health": -5, "happiness": 10, "wealth": -3000, "energy": 0 }
       },
       "C": {
         "text": "Go all-in, have multiple kids",
-        "effects": {"health": -15, "happiness": 20, "wealth": -8000, "skills": -10, "deathChance": 0.1}
+        "effects": {
+          "health": -15,
+          "happiness": 20,
+          "wealth": -8000,
+          "energy": -10,
+          "deathChance": 0.1
+        }
       }
     }
   },
@@ -167,15 +203,15 @@
     "choices": {
       "A": {
         "text": "Get full treatment immediately",
-        "effects": {"health": 15, "happiness": -10, "wealth": -5000, "skills": 0}
+        "effects": { "health": 15, "happiness": -10, "wealth": -5000, "energy": 0 }
       },
       "B": {
         "text": "Basic care, monitor it",
-        "effects": {"health": 5, "happiness": -5, "wealth": -1000, "skills": 0}
+        "effects": { "health": 5, "happiness": -5, "wealth": -1000, "energy": 0 }
       },
       "C": {
         "text": "Ignore it, save money",
-        "effects": {"health": -20, "happiness": 5, "wealth": 0, "skills": 0, "deathChance": 0.35}
+        "effects": { "health": -20, "happiness": 5, "wealth": 0, "energy": 0, "deathChance": 0.35 }
       }
     }
   },
@@ -187,15 +223,21 @@
     "choices": {
       "A": {
         "text": "Sell business, take safe exit",
-        "effects": {"health": 5, "happiness": -10, "wealth": 10000, "skills": 0}
+        "effects": { "health": 5, "happiness": -10, "wealth": 10000, "energy": 0 }
       },
       "B": {
         "text": "Cut costs, stabilize slowly",
-        "effects": {"health": -5, "happiness": -5, "wealth": 2000, "skills": 10}
+        "effects": { "health": -5, "happiness": -5, "wealth": 2000, "energy": 10 }
       },
       "C": {
         "text": "Take massive loan, expand",
-        "effects": {"health": -20, "happiness": -15, "wealth": -10000, "skills": 25, "deathChance": 0.4}
+        "effects": {
+          "health": -20,
+          "happiness": -15,
+          "wealth": -10000,
+          "energy": 25,
+          "deathChance": 0.4
+        }
       }
     }
   },
@@ -207,15 +249,21 @@
     "choices": {
       "A": {
         "text": "Push through to retirement",
-        "effects": {"health": -10, "happiness": -10, "wealth": 2000, "skills": 5}
+        "effects": { "health": -10, "happiness": -10, "wealth": 2000, "energy": 5 }
       },
       "B": {
         "text": "Semi-retire, part-time work",
-        "effects": {"health": 5, "happiness": 10, "wealth": 500, "skills": 0}
+        "effects": { "health": 5, "happiness": 10, "wealth": 500, "energy": 0 }
       },
       "C": {
         "text": "Sell everything, move abroad",
-        "effects": {"health": 10, "happiness": 25, "wealth": -5000, "skills": 15, "deathChance": 0.3}
+        "effects": {
+          "health": 10,
+          "happiness": 25,
+          "wealth": -5000,
+          "energy": 15,
+          "deathChance": 0.3
+        }
       }
     }
   },
@@ -227,15 +275,21 @@
     "choices": {
       "A": {
         "text": "Relax, enjoy simple pleasures",
-        "effects": {"health": 5, "happiness": 15, "wealth": -500, "skills": 0}
+        "effects": { "health": 5, "happiness": 15, "wealth": -500, "energy": 0 }
       },
       "B": {
         "text": "Mentor younger generation",
-        "effects": {"health": 0, "happiness": 20, "wealth": 0, "skills": 10}
+        "effects": { "health": 0, "happiness": 20, "wealth": 0, "energy": 10 }
       },
       "C": {
         "text": "Chase ambitious final project",
-        "effects": {"health": -15, "happiness": 10, "wealth": 5000, "skills": 20, "deathChance": 0.45}
+        "effects": {
+          "health": -15,
+          "happiness": 10,
+          "wealth": 5000,
+          "energy": 20,
+          "deathChance": 0.45
+        }
       }
     }
   },
@@ -247,15 +301,21 @@
     "choices": {
       "A": {
         "text": "Downsize home, live frugally",
-        "effects": {"health": 0, "happiness": -5, "wealth": 5000, "skills": 0}
+        "effects": { "health": 0, "happiness": -5, "wealth": 5000, "energy": 0 }
       },
       "B": {
         "text": "Take easy part-time job",
-        "effects": {"health": -5, "happiness": -5, "wealth": 1000, "skills": 5}
+        "effects": { "health": -5, "happiness": -5, "wealth": 1000, "energy": 5 }
       },
       "C": {
         "text": "Risky investment to recover",
-        "effects": {"health": -10, "happiness": -15, "wealth": 10000, "skills": 10, "deathChance": 0.5}
+        "effects": {
+          "health": -10,
+          "happiness": -15,
+          "wealth": 10000,
+          "energy": 10,
+          "deathChance": 0.5
+        }
       }
     }
   },
@@ -267,15 +327,15 @@
     "choices": {
       "A": {
         "text": "Move to assisted living facility",
-        "effects": {"health": 10, "happiness": -10, "wealth": -10000, "skills": 0}
+        "effects": { "health": 10, "happiness": -10, "wealth": -10000, "energy": 0 }
       },
       "B": {
         "text": "Rely on family for help",
-        "effects": {"health": 5, "happiness": 5, "wealth": -2000, "skills": 0}
+        "effects": { "health": 5, "happiness": 5, "wealth": -2000, "energy": 0 }
       },
       "C": {
         "text": "Stay independent, no help",
-        "effects": {"health": -20, "happiness": 15, "wealth": 0, "skills": 5, "deathChance": 0.6}
+        "effects": { "health": -20, "happiness": 15, "wealth": 0, "energy": 5, "deathChance": 0.6 }
       }
     }
   },
@@ -287,15 +347,21 @@
     "choices": {
       "A": {
         "text": "Take severance package",
-        "effects": {"health": -5, "happiness": -10, "wealth": 5000, "skills": 0}
+        "effects": { "health": -5, "happiness": -10, "wealth": 5000, "energy": 0 }
       },
       "B": {
         "text": "Fight to keep your job",
-        "effects": {"health": -10, "happiness": -5, "wealth": 0, "skills": 10}
+        "effects": { "health": -10, "happiness": -5, "wealth": 0, "energy": 10 }
       },
       "C": {
         "text": "Pivot to completely new field",
-        "effects": {"health": -15, "happiness": 5, "wealth": -2000, "skills": 25, "deathChance": 0.2}
+        "effects": {
+          "health": -15,
+          "happiness": 5,
+          "wealth": -2000,
+          "energy": 25,
+          "deathChance": 0.2
+        }
       }
     }
   },
@@ -307,15 +373,21 @@
     "choices": {
       "A": {
         "text": "Stay in current city, stable life",
-        "effects": {"health": 0, "happiness": 5, "wealth": 500, "skills": 0}
+        "effects": { "health": 0, "happiness": 5, "wealth": 500, "energy": 0 }
       },
       "B": {
         "text": "Negotiate remote hybrid work",
-        "effects": {"health": -5, "happiness": 10, "wealth": 2000, "skills": 10}
+        "effects": { "health": -5, "happiness": 10, "wealth": 2000, "energy": 10 }
       },
       "C": {
         "text": "Move immediately, all-in",
-        "effects": {"health": -15, "happiness": -10, "wealth": 8000, "skills": 20, "deathChance": 0.25}
+        "effects": {
+          "health": -15,
+          "happiness": -10,
+          "wealth": 8000,
+          "energy": 20,
+          "deathChance": 0.25
+        }
       }
     }
   },
@@ -327,15 +399,21 @@
     "choices": {
       "A": {
         "text": "Get married, commit fully",
-        "effects": {"health": 0, "happiness": 15, "wealth": -5000, "skills": 0}
+        "effects": { "health": 0, "happiness": 15, "wealth": -5000, "energy": 0 }
       },
       "B": {
         "text": "Keep dating, see how it goes",
-        "effects": {"health": 0, "happiness": -5, "wealth": 0, "skills": 0}
+        "effects": { "health": 0, "happiness": -5, "wealth": 0, "energy": 0 }
       },
       "C": {
         "text": "Break up, start fresh",
-        "effects": {"health": -10, "happiness": -20, "wealth": 0, "skills": 10, "deathChance": 0.1}
+        "effects": {
+          "health": -10,
+          "happiness": -20,
+          "wealth": 0,
+          "energy": 10,
+          "deathChance": 0.1
+        }
       }
     }
   },
@@ -347,15 +425,21 @@
     "choices": {
       "A": {
         "text": "Stay at stable corporate job",
-        "effects": {"health": 0, "happiness": 0, "wealth": 1000, "skills": 5}
+        "effects": { "health": 0, "happiness": 0, "wealth": 1000, "energy": 5 }
       },
       "B": {
         "text": "Join startup, balanced package",
-        "effects": {"health": -5, "happiness": 10, "wealth": 500, "skills": 20}
+        "effects": { "health": -5, "happiness": 10, "wealth": 500, "energy": 20 }
       },
       "C": {
         "text": "All-in: low salary, max equity",
-        "effects": {"health": -15, "happiness": 5, "wealth": -500, "skills": 30, "deathChance": 0.3}
+        "effects": {
+          "health": -15,
+          "happiness": 5,
+          "wealth": -500,
+          "energy": 30,
+          "deathChance": 0.3
+        }
       }
     }
   },
@@ -367,15 +451,21 @@
     "choices": {
       "A": {
         "text": "Accept remote work, lower pay",
-        "effects": {"health": 5, "happiness": 5, "wealth": -1000, "skills": 10}
+        "effects": { "health": 5, "happiness": 5, "wealth": -1000, "energy": 10 }
       },
       "B": {
         "text": "Keep office job, health risk",
-        "effects": {"health": -15, "happiness": -10, "wealth": 2000, "skills": 5}
+        "effects": { "health": -15, "happiness": -10, "wealth": 2000, "energy": 5 }
       },
       "C": {
         "text": "Quit, start online business",
-        "effects": {"health": 0, "happiness": 10, "wealth": -3000, "skills": 25, "deathChance": 0.25}
+        "effects": {
+          "health": 0,
+          "happiness": 10,
+          "wealth": -3000,
+          "energy": 25,
+          "deathChance": 0.25
+        }
       }
     }
   },
@@ -387,15 +477,21 @@
     "choices": {
       "A": {
         "text": "Pay off all debts immediately",
-        "effects": {"health": 5, "happiness": 15, "wealth": 10000, "skills": 0}
+        "effects": { "health": 5, "happiness": 15, "wealth": 10000, "energy": 0 }
       },
       "B": {
         "text": "Invest in diversified portfolio",
-        "effects": {"health": 0, "happiness": 10, "wealth": 15000, "skills": 10}
+        "effects": { "health": 0, "happiness": 10, "wealth": 15000, "energy": 10 }
       },
       "C": {
         "text": "Bet everything on hot opportunity",
-        "effects": {"health": -10, "happiness": -5, "wealth": 40000, "skills": 15, "deathChance": 0.35}
+        "effects": {
+          "health": -10,
+          "happiness": -5,
+          "wealth": 40000,
+          "energy": 15,
+          "deathChance": 0.35
+        }
       }
     }
   }

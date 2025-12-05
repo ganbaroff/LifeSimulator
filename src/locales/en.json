@@ -1,0 +1,113 @@
+{
+  "app_name": "LifeSim GSL",
+  "welcome": "Welcome to LifeSim GSL",
+  "start_game": "Start Game",
+  "continue": "Continue",
+  "settings": "Settings",
+  "quit": "Quit",
+
+  "character_creation": "Character Creation",
+  "name": "Name",
+  "country": "Country",
+  "birth_year": "Birth Year",
+  "profession": "Profession",
+  "create_character": "Create Character",
+
+  "attributes": {
+    "health": "Health",
+    "happiness": "Happiness",
+    "wealth": "Wealth",
+    "skills": "Skills"
+  },
+
+  "game": {
+    "age": "Age",
+    "year": "Year",
+    "level": "Level",
+    "crystals": "Crystals",
+    "time_remaining": "Time Remaining"
+  },
+
+  "choices": {
+    "choice_a": "Choice A",
+    "choice_b": "Choice B",
+    "choice_c": "Choice C (Risky)",
+    "choice_d": "Your Choice"
+  },
+
+  "game_over": {
+    "victory": "Victory!",
+    "defeat": "Game Over",
+    "age_reached": "Age Reached",
+    "final_wealth": "Final Wealth",
+    "crystals_earned": "Crystals Earned",
+    "main_menu": "Main Menu",
+    "rewind": "Rewind"
+  },
+
+  "settings_screen": {
+    "title": "Settings",
+    "audio": "Audio",
+    "sound_effects": "Sound Effects",
+    "background_music": "Background Music",
+    "game": "Game",
+    "ai_events": "AI Events",
+    "ai_description": "Generate events using AI (requires API key)",
+    "notifications": "Notifications",
+    "daily_reminders": "Daily Reminders",
+    "reminder_description": "Get reminded to play every day",
+    "privacy": "Privacy",
+    "analytics": "Analytics",
+    "analytics_description": "Help us improve the game",
+    "cloud_save": "Cloud Save",
+    "sync_cloud": "Sync with Cloud",
+    "danger_zone": "Danger Zone",
+    "reset_progress": "Reset All Progress",
+    "reset_confirm": "Are you sure? This will delete all your progress and cannot be undone.",
+    "back": "Back"
+  },
+
+  "shop": {
+    "title": "Crystal Shop",
+    "popular": "POPULAR",
+    "best_value": "BEST VALUE",
+    "buy": "BUY",
+    "footer": "Purchases are processed securely through your app store"
+  },
+
+  "ads": {
+    "watch_ad": "Watch Ad",
+    "reward_earned": "Reward Earned!",
+    "received_crystals": "You received {{amount}} crystals!",
+    "ad_not_ready": "Ad Not Ready",
+    "try_again": "Please try again in a moment"
+  },
+
+  "errors": {
+    "oops": "Oops!",
+    "something_wrong": "Something went wrong. We've been notified and will fix it soon.",
+    "try_again": "Try Again",
+    "error": "Error",
+    "failed_load": "Failed to load. Please try again."
+  },
+
+  "countries": {
+    "USA": "USA",
+    "Russia": "Russia",
+    "China": "China",
+    "India": "India",
+    "Germany": "Germany",
+    "Japan": "Japan",
+    "Brazil": "Brazil"
+  },
+
+  "professions": {
+    "student": "Student",
+    "engineer": "Engineer",
+    "doctor": "Doctor",
+    "teacher": "Teacher",
+    "artist": "Artist",
+    "entrepreneur": "Entrepreneur",
+    "unemployed": "Unemployed"
+  }
+}
