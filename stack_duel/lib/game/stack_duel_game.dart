@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../state/score_state.dart';
+import 'analytics.dart';
 import 'falling_piece.dart';
 import 'haptics.dart';
 import 'slice_math.dart';
@@ -19,12 +21,19 @@ const String kBuildTag = String.fromEnvironment('BUILD_TAG', defaultValue: 'dev'
 /// Stack Duel: tap to drop the moving block onto the tower. Misaligned drops
 /// get sliced; missing entirely ends the run.
 class StackDuelGame extends FlameGame {
-  StackDuelGame({required this.scoreState, this.haptics = const DeviceHaptics()});
+  StackDuelGame({
+    required this.scoreState,
+    this.haptics = const DeviceHaptics(),
+    this.analytics = const NoopAnalytics(),
+  });
 
   final ScoreState scoreState;
 
   /// Tactile feedback seam (injected so tests can use a fake).
   final Haptics haptics;
+
+  /// Analytics seam (no-op by default; events are wired for Day 3).
+  final Analytics analytics;
 
   /// Height of every block (logical px).
   static const double blockHeight = 40;
@@ -41,6 +50,11 @@ class StackDuelGame extends FlameGame {
   /// How long the sliced piece keeps falling (engine running) after a fatal
   /// drop before the game-over overlay appears. Pure feel.
   static const double _gameOverDelay = 0.6;
+
+  /// Half-width (px) of the "perfect" window: a drop whose center is within this
+  /// of the top block's center counts as perfect. DEVICE-TUNED KNOB (§13) — a
+  /// starting value to be tuned by feel on the S24, not a final pick.
+  static const double _perfectEpsilon = 8;
 
   /// Flat color palette cycled per height for visual variety.
   static const List<Color> _palette = [
@@ -70,7 +84,11 @@ class StackDuelGame extends FlameGame {
   bool _dying = false;
   double _deathTimer = 0;
 
+  /// Consecutive-perfect streak. Drives the score multiplier (and future coins).
+  int _combo = 0;
+
   late TextComponent _scoreText;
+  late TextComponent _comboText;
   final TextPaint _hudPaint = TextPaint(
     style: const TextStyle(
       color: Colors.white,
@@ -84,6 +102,24 @@ class StackDuelGame extends FlameGame {
     style: const TextStyle(
       color: Color(0xFFF1C40F),
       fontSize: 16,
+      fontWeight: FontWeight.bold,
+    ),
+  );
+
+  /// Combo readout (shown only while a streak is active).
+  final TextPaint _comboPaint = TextPaint(
+    style: const TextStyle(
+      color: Color(0xFF2ECC71),
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+    ),
+  );
+
+  /// Transient "PERFECT" flash.
+  final TextPaint _perfectPaint = TextPaint(
+    style: const TextStyle(
+      color: Colors.white,
+      fontSize: 34,
       fontWeight: FontWeight.bold,
     ),
   );
@@ -109,6 +145,14 @@ class StackDuelGame extends FlameGame {
       anchor: Anchor.topLeft,
     ));
 
+    _comboText = TextComponent(
+      text: '',
+      textRenderer: _comboPaint,
+      position: Vector2(16, 78),
+      anchor: Anchor.topLeft,
+    );
+    camera.viewport.add(_comboText);
+
     // Full-screen tap catcher (component-based TapCallbacks). Lives in the
     // viewport so it covers the screen regardless of camera scroll.
     camera.viewport.add(_TapLayer(this));
@@ -127,6 +171,7 @@ class StackDuelGame extends FlameGame {
     _moving = null;
     isGameOver = false;
     _dying = false;
+    _combo = 0;
     scoreState.reset();
 
     _centerX = size.x / 2;
@@ -144,10 +189,12 @@ class StackDuelGame extends FlameGame {
     _spawnMovingBlock();
     _snapCameraToTarget();
     _updateHud();
+    analytics.event('game_start');
   }
 
   /// Resets the tower to a single base block. Called by the restart button.
   void restart() {
+    analytics.event('restart');
     overlays.remove('gameOver');
     _startNewRun();
     resumeEngine();
@@ -244,10 +291,41 @@ class StackDuelGame extends FlameGame {
       ));
     }
 
-    scoreState.increment();
-    haptics.success();
+    // Perfect = the dropped block's center is within the epsilon window of the
+    // top block's center. It only grants feedback + combo; the slice above still
+    // narrowed the tower normally (no width armor).
+    final topCenter = (top.left + top.right) / 2;
+    final dropCenter = (moving.left + moving.right) / 2;
+    final perfect = isPerfect(topCenter, dropCenter, _perfectEpsilon);
+
+    final prevCombo = _combo;
+    _combo = perfect ? _combo + 1 : 0;
+    if (_combo != prevCombo) {
+      analytics.event('combo_changed', {'combo': _combo});
+    }
+    if (perfect) {
+      analytics.event('perfect', {'combo': _combo});
+      haptics.perfect();
+      _showPerfectFlash();
+    } else {
+      haptics.success();
+    }
+
+    // Combo multiplier feeds the score (capped — see comboMultiplier).
+    scoreState.add(comboMultiplier(_combo));
     _updateHud();
     _spawnMovingBlock();
+  }
+
+  /// Brief, asset-free "PERFECT" flash near the top-centre of the screen.
+  void _showPerfectFlash() {
+    final flash = TextComponent(
+      text: 'PERFECT',
+      textRenderer: _perfectPaint,
+      position: Vector2(size.x / 2, size.y * 0.28),
+      anchor: Anchor.center,
+    )..add(RemoveEffect(delay: 0.55));
+    camera.viewport.add(flash);
   }
 
   Future<void> _endRun() async {
@@ -257,7 +335,12 @@ class StackDuelGame extends FlameGame {
     isGameOver = true;
     _dying = true;
     _deathTimer = _gameOverDelay;
+    _combo = 0;
     haptics.gameOver();
+    analytics.event('game_over', {
+      'score': scoreState.current,
+      'blocks': _tower.length,
+    });
     await scoreState.maybeUpdateBest();
     _updateHud();
   }
@@ -301,6 +384,7 @@ class StackDuelGame extends FlameGame {
   void _updateHud() {
     _scoreText.text =
         'Score: ${scoreState.current}    Best: ${scoreState.best}';
+    _comboText.text = _combo > 0 ? 'Combo ×${comboMultiplier(_combo)}' : '';
   }
 
   @override

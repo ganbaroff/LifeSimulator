@@ -28,6 +28,11 @@ class ScoreState {
     current += 1;
   }
 
+  /// Adds [points] for a successful drop (combo multiplier feeds this).
+  void add(int points) {
+    current += points;
+  }
+
   /// If the current run beat the stored best, persist and update [best].
   /// Returns true when a new best was recorded.
   Future<bool> maybeUpdateBest() async {

@@ -95,3 +95,25 @@ OverlapResult computeOverlap(
     overhangWidth: overhangWidth,
   );
 }
+
+/// Whether a drop counts as "perfect": the dropped block's center is within
+/// [epsilon] of the top block's center.
+///
+/// Perfect is feedback + combo only — it does NOT preserve width. The slice in
+/// [computeOverlap] still runs normally, so the tower keeps narrowing by the
+/// tiny misalignment (audit delta #1: Perfect is a skill ceiling, not armor).
+bool isPerfect(double prevCenter, double dropCenter, double epsilon) =>
+    (prevCenter - dropCenter).abs() <= epsilon;
+
+/// Score multiplier for a run of [streak] consecutive perfects.
+///
+/// streak 0 -> 1x (a normal, non-perfect drop). Each perfect adds 1x. The
+/// multiplier is **capped** so it can't inflate coins once combos feed the
+/// rewarded "double coins" economy (audit delta #2). Pure + saturating so it is
+/// the single source of truth for future coin payouts (§12).
+int comboMultiplier(int streak) {
+  if (streak <= 0) return 1;
+  const maxMultiplier = 8;
+  final m = 1 + streak;
+  return m > maxMultiplier ? maxMultiplier : m;
+}

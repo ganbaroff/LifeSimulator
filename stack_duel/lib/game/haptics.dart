@@ -6,8 +6,11 @@ import 'package:flutter/services.dart';
 /// while staying headless-testable: the real implementation hits a platform
 /// channel that we do not want to invoke in `flutter test`. Tests inject a fake.
 abstract class Haptics {
-  /// A successful block drop landed.
+  /// A successful (non-perfect) block drop landed.
   void success();
+
+  /// A perfect drop landed (stronger than [success]).
+  void perfect();
 
   /// The run ended (missed drop).
   void gameOver();
@@ -20,6 +23,9 @@ class DeviceHaptics implements Haptics {
 
   @override
   void success() => HapticFeedback.mediumImpact();
+
+  @override
+  void perfect() => HapticFeedback.heavyImpact();
 
   @override
   void gameOver() => HapticFeedback.heavyImpact();

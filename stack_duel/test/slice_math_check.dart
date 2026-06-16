@@ -78,6 +78,18 @@ void main() {
     check('cumulative: tower strictly narrows to 50', ok && near(width, 50));
   }
 
+  // 7) isPerfect: within / outside the epsilon window.
+  check('perfect: exact centre is perfect', isPerfect(100, 100, 8));
+  check('perfect: within epsilon is perfect', isPerfect(100, 106, 8));
+  check('perfect: at epsilon edge is perfect', isPerfect(100, 108, 8));
+  check('perfect: beyond epsilon is NOT perfect', !isPerfect(100, 120, 8));
+
+  // 8) comboMultiplier: grows, then saturates at the cap (audit delta #2).
+  check('combo: streak 0 -> 1x', comboMultiplier(0) == 1);
+  check('combo: streak 1 -> 2x', comboMultiplier(1) == 2);
+  check('combo: streak 2 -> 3x', comboMultiplier(2) == 3);
+  check('combo: caps at 8x', comboMultiplier(7) == 8 && comboMultiplier(100) == 8);
+
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {
     throw StateError('slice math verification failed');

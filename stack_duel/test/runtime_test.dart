@@ -33,10 +33,14 @@ import 'package:stack_duel/state/score_state.dart';
 /// (without invoking a real platform channel).
 class FakeHaptics implements Haptics {
   int successCount = 0;
+  int perfectCount = 0;
   int gameOverCount = 0;
 
   @override
   void success() => successCount++;
+
+  @override
+  void perfect() => perfectCount++;
 
   @override
   void gameOver() => gameOverCount++;
@@ -101,18 +105,43 @@ void main() {
         reason: 'a viewport-sized component must catch taps anywhere');
   });
 
-  testWithGame<StackDuelGame>('1: a perfectly aligned drop scores and stacks',
+  testWithGame<StackDuelGame>('1: a perfect drop pops combo and scores x2',
       create, (game) async {
     await game.ready();
     final m = _moving(game);
-    m.position.x = _top(game).position.x; // perfect alignment
+    m.position.x = _top(game).position.x; // exact centre = perfect
     game.dropBlock();
     await game.ready();
 
-    expect(scoreState.current, 1, reason: 'successful drop scores +1');
+    // First perfect: combo 1 -> multiplier 2x.
+    expect(scoreState.current, 2, reason: 'perfect drop scores via x2 combo');
+    expect(haptics.perfectCount, 1, reason: 'perfect haptic fired');
+    expect(haptics.successCount, 0, reason: 'not a plain success');
     expect(_resting(game), 2, reason: 'base + newly placed block');
-    expect(_falling(game), 0, reason: 'no overhang on a perfect drop');
+    expect(_falling(game), 0, reason: 'no overhang on an exact drop');
     expect(game.overlays.isActive('gameOver'), isFalse);
+  });
+
+  testWithGame<StackDuelGame>(
+      'combo: builds on consecutive perfects, resets on a non-perfect drop',
+      create, (game) async {
+    await game.ready();
+    // Two exact (perfect) drops: +2 then +3 = 5.
+    _moving(game).position.x = _top(game).position.x;
+    game.dropBlock();
+    await game.ready();
+    _moving(game).position.x = _top(game).position.x;
+    game.dropBlock();
+    await game.ready();
+    expect(scoreState.current, 5, reason: '2x then 3x combo');
+    expect(haptics.perfectCount, 2);
+
+    // A clearly off-centre drop breaks the streak: +1 only.
+    _moving(game).position.x = _top(game).position.x + 30; // > epsilon
+    game.dropBlock();
+    await game.ready();
+    expect(scoreState.current, 6, reason: 'non-perfect resets combo, +1');
+    expect(haptics.successCount, 1, reason: 'plain success on the broken streak');
   });
 
   testWithGame<StackDuelGame>(
@@ -216,14 +245,15 @@ void main() {
   });
 
   testWithGame<StackDuelGame>(
-      'haptics: success fires on a scoring drop, not game over', create,
-      (game) async {
+      'haptics: success fires on a non-perfect scoring drop, not game over',
+      create, (game) async {
     await game.ready();
-    _moving(game).position.x = _top(game).position.x; // aligned -> scores
+    _moving(game).position.x = _top(game).position.x + 30; // off-centre -> plain success
     game.dropBlock();
     await game.ready();
 
     expect(haptics.successCount, 1, reason: 'one success buzz per scoring drop');
+    expect(haptics.perfectCount, 0);
     expect(haptics.gameOverCount, 0);
   });
 
