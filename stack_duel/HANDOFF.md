@@ -253,23 +253,37 @@ Do NOT dump content. Add ONE thing at a time, rebuild the APK, play on device,
 keep it only if it improves feel. Never regress the verified core (don't touch
 `slice_math.dart` behavior; keep tests green).
 
-### Tier 1 — Juice (make the proven loop *feel* better). Highest ROI, low risk.
-The owner specifically noticed the absence of feedback. This is the natural next
-step now that the loop is fun.
-1. **Haptics on slice** — light `HapticFeedback` on a successful drop, a heavier
-   one on game over. Tiny change, big perceived polish. (Adds no new scope creep;
-   pure feedback.)
-2. **"Perfect" placement reward** — if `|drop center - top center|` is within a
-   small epsilon, snap to perfect (no narrowing) and give a visual/score pop.
-   This is the single biggest depth-add for stack games: it creates a skill
-   ceiling and a combo fantasy. Needs a tiny bit of logic near `dropBlock` but
-   the math stays in `computeOverlap` (add an `isPerfect`/epsilon concept there
-   so it stays testable).
-3. **Slice/placement animation polish** — a brief color flash or scale-pop on
-   the placed block; ensure the game-over falling piece animates ~0.5s *before*
-   the overlay (currently `pauseEngine()` freezes it instantly — defer the pause).
-4. **Color progression** — already cycles; consider a smooth hue gradient by
-   height so climbing feels visually rewarding.
+### Tier 1 — Juice + retention (make the proven loop *feel* better). Highest ROI.
+The owner noticed the absence of feedback; this is the natural next step now that
+the loop is fun. Implement ONE per build, verify on S24 (see §13 one-knob rule).
+1. **Haptics on slice** — light `HapticFeedback` on a successful drop, heavier on
+   game over. Tiny change, big perceived polish.
+2. **"Perfect" placement + combo** — if `|drop center - top center|` is within a
+   small epsilon, treat as perfect: a visual/score pop and (optionally) no
+   narrowing on that drop. Two HARD constraints from the owner (do not violate):
+   - **2a. Perfect must NOT remove fail-pressure.** Perfect is a *skill ceiling,
+     not an immortality mode.* Keep the aggressive speed ramp so perfects get
+     genuinely harder to land as score climbs; tension must never disappear.
+   - **2b. Design Perfect → combo multiplier NOW**, even with no coins yet. A
+     consecutive-perfect streak drives a score multiplier that LATER maps onto
+     coins and feeds rewarded "double coins". Put both pure functions in
+     `slice_math.dart`: `isPerfect(...)` and `comboMultiplier(streak)`, each with
+     asserts in `slice_math_check.dart`. Designing combo now means the economy
+     drops in later with zero rework.
+3. **Deferred game over** — let the sliced piece fall ~0.5s *before* the overlay
+   (today `pauseEngine()` freezes it instantly). Pure feel.
+4. **Tap debounce during that ~0.5s fall** — while the game-over animation plays,
+   ignore taps so a rage-tap at death is not mis-registered as a drop/restart.
+   This is a real feel bug waiting to happen; ship it with #3.
+5. **One-tap restart, <1s** — hyper-casual addiction is "die → tap → already
+   playing". A menu or delay between death and the next block kills retention
+   harder than missing sound. **Measure on S24:** taps and seconds from game over
+   to the first moving block; target one tap, sub-second.
+6. **Analytics event stubs (no provider yet)** — add empty hook calls now:
+   `game_start`, `game_over(score, blocks, perfects)`, `restart`. When ads/
+   analytics arrive the events are already wired → zero rework.
+7. **Slice/placement animation polish & color progression** — brief scale/flash
+   pop on placed block; smooth hue-by-height so climbing feels rewarding.
 
 ### Tier 2 — Game feel tuning (numbers, not features).
 5. Tune `_speedPerPoint` / `_maxSpeed` and the perfect-window epsilon together on
@@ -281,10 +295,14 @@ step now that the loop is fun.
 7. Combo counter for consecutive perfects (score multiplier).
 8. Subtle background gradient that shifts with height/score.
 
-### Explicitly deferred (do not start until the above feel right):
-- Sound design, shop/skins/coins, ads, analytics, sharing, backend,
-  leaderboards, iOS build, release signing. These were all out of v1 scope and
-  remain so.
+### Day 3 (named explicitly — not "someday"): coins + skins + rewarded + interstitial.
+The next milestone after Day 2 is a **revenue signal**, not more polish. Do not
+let "feel-first" become "feel-forever". Day 3 implements: coins (cosmetic-only
+currency), a skin or two, rewarded ad (continue + double coins), and an
+interstitial cadence. See §12 for the contract these must honor.
+
+### Deferred until Day 3+ (do not start earlier):
+- Sound design, sharing, backend, leaderboards, iOS build, release signing.
 
 ### Engineering hygiene to keep:
 - Any new slice-related rule (e.g. perfect window) goes into `slice_math.dart`
@@ -296,10 +314,12 @@ step now that the loop is fun.
 
 ## 11. Quick start for the next AI
 
-1. Read §3 (mechanic) and §5 (`stack_duel_game.dart`).
+1. Read §3 (mechanic), §5 (`stack_duel_game.dart`), and §12–14 (monetization
+   contract, tuning knobs, exit criteria) — those constrain what you may change.
 2. Run `flutter test` and `dart run test/slice_math_check.dart` to confirm green
    baseline (25 checks total).
-3. Pick exactly ONE Tier-1 item. Implement it inside `stack_duel/`.
+3. Pick exactly ONE Tier-1 item (§10) and change at most ONE tuning knob (§13).
+   Implement it inside `stack_duel/`.
 4. Keep tests green; add a test for the new behavior.
 5. Push to the feature branch → CI builds the APK → owner installs the
    `stack-duel-latest` Release asset on the S24 → judge by feel.
@@ -307,3 +327,57 @@ step now that the loop is fun.
 
 The bar for "done" on this project is not "compiles" or "tests pass" — it is
 **"played on the S24 and it feels better."**
+
+---
+
+## 12. Monetization contract (FUTURE — do not break)
+
+This is the intended economic shape for Day 3+. It is written down now so that a
+well-meaning refactor doesn't quietly make it impossible. **Any feel feature
+added before Day 3 must stay compatible with this contract.**
+
+- **Coins are cosmetic-only.** They buy skins, never gameplay advantage. No
+  pay-to-win, no buying score/lives with hard or soft currency.
+- **Perfect → combo → coins.** The combo multiplier (built in Tier 1, §10.2b) is
+  the source of coin income. Keep `comboMultiplier(streak)` pure and the single
+  source of truth so coins later derive from it directly.
+- **Rewarded ad = continue + double coins.** Opt-in only. A rewarded view may
+  revive the current run once and/or double the run's coin payout.
+- **Interstitial cadence = every 3rd game over.** Not on every death (kills
+  retention), not random.
+- **Implication for anyone touching Perfect:** Perfect MUST remain tied to the
+  combo system. Do **not** implement Perfect as a standalone "no-narrowing"
+  bonus disconnected from `comboMultiplier`, or the economy has to be rebuilt.
+
+If a proposed change conflicts with any bullet above, stop and flag it rather
+than "improving" past it.
+
+---
+
+## 13. Tuning knobs (one knob per build)
+
+**Rule:** change exactly ONE of these per build, then play on the S24. Turning
+several at once makes it impossible to attribute a feel change. Record new values
+here whenever one is changed.
+
+| Knob | Where | Current value | Notes |
+|---|---|---|---|
+| Block speed ramp | `stack_duel_game.dart` `_baseSpeed/_speedPerPoint/_maxSpeed` | 120 / 8 / 460 px/s | the difficulty curve; keep aggressive (see §10.2a) |
+| Perfect window (epsilon) | `slice_math.dart` (to be added) | — (not built yet) | how forgiving "perfect" is; smaller = harder |
+| Camera lead / easing | `stack_duel_game.dart` `_topMargin` (0.22) + lerp `dt*6` | 0.22 / 6 | how far ahead the camera looks + how snappy it follows |
+
+---
+
+## 14. Exit criteria — time-box the "feel" (so polish doesn't run forever)
+
+"Done = better on S24" is open-ended; polish can go on indefinitely. Day 2 has a
+hard finish line. **Day 2 is CLOSED when ALL of:**
+- (a) Perfect + combo read clearly on device (player understands when they nailed
+  it and that a streak is building);
+- (b) haptics present (slice + game over);
+- (c) restart is one tap, under 1 second;
+- (d) the owner replays **≥10 times in a row, unprompted**.
+
+When (a)–(d) hold: **STOP polishing** and move to Day 3 (§10 / §12). Do not add a
+12th juice tweak instead of starting monetization. The goal of the Day-3 build is
+a revenue signal, full stop.
