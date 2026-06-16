@@ -33,6 +33,10 @@ class StackDuelGame extends FlameGame {
   /// active moving block should sit. Drives the upward camera scroll.
   static const double _topMargin = 0.22;
 
+  /// How long the sliced piece keeps falling (engine running) after a fatal
+  /// drop before the game-over overlay appears. Pure feel.
+  static const double _gameOverDelay = 0.6;
+
   /// Flat color palette cycled per height for visual variety.
   static const List<Color> _palette = [
     Color(0xFFE74C3C),
@@ -54,6 +58,12 @@ class StackDuelGame extends FlameGame {
   late double _centerX;
 
   bool isGameOver = false;
+
+  /// True during the brief death animation (sliced piece falling) before the
+  /// overlay is shown and the engine is paused. Taps are ignored throughout,
+  /// so a rage-tap at death can't trigger an accidental drop or restart.
+  bool _dying = false;
+  double _deathTimer = 0;
 
   late TextComponent _scoreText;
   final TextPaint _hudPaint = TextPaint(
@@ -94,6 +104,7 @@ class StackDuelGame extends FlameGame {
     _tower.clear();
     _moving = null;
     isGameOver = false;
+    _dying = false;
     scoreState.reset();
 
     _centerX = size.x / 2;
@@ -218,12 +229,15 @@ class StackDuelGame extends FlameGame {
   }
 
   Future<void> _endRun() async {
+    // Enter the "dying" window synchronously: this blocks further taps/drops
+    // immediately, but the engine keeps running so the sliced piece visibly
+    // falls. update() shows the overlay and pauses after [_gameOverDelay].
     isGameOver = true;
+    _dying = true;
+    _deathTimer = _gameOverDelay;
     haptics.gameOver();
     await scoreState.maybeUpdateBest();
     _updateHud();
-    overlays.add('gameOver');
-    pauseEngine();
   }
 
   // ---------------------------------------------------------------------------
@@ -243,8 +257,18 @@ class StackDuelGame extends FlameGame {
 
   @override
   void update(double dt) {
-    super.update(dt);
-    if (isGameOver) return;
+    super.update(dt); // keeps animating the falling piece during the death window
+    if (isGameOver) {
+      if (_dying) {
+        _deathTimer -= dt;
+        if (_deathTimer <= 0) {
+          _dying = false;
+          overlays.add('gameOver');
+          pauseEngine();
+        }
+      }
+      return;
+    }
     // Smoothly scroll the camera upward as the tower grows.
     final current = camera.viewfinder.position;
     final target = Vector2(_centerX, _targetCameraY);

@@ -19,7 +19,7 @@ class DeviceHaptics implements Haptics {
   const DeviceHaptics();
 
   @override
-  void success() => HapticFeedback.lightImpact();
+  void success() => HapticFeedback.mediumImpact();
 
   @override
   void gameOver() => HapticFeedback.heavyImpact();

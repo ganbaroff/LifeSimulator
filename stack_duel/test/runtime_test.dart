@@ -149,20 +149,34 @@ void main() {
   });
 
   testWithGame<StackDuelGame>(
-      '5: a full miss ends the run and shows the overlay', create,
-      (game) async {
+      '5: a full miss ends the run; overlay is deferred + taps are debounced',
+      create, (game) async {
     await game.ready();
     // The real overlay builder is supplied by GameWidget on device; register a
     // stub so the headless harness can exercise the game-over signal.
     game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
-    final top = _top(game);
-    _moving(game).position.x = top.right + 40; // no overlap at all
+    _moving(game).position.x = _top(game).right + 40; // no overlap at all
     game.dropBlock();
     await game.ready();
 
+    // Death starts immediately (run over, taps blocked) but the overlay is NOT
+    // shown yet — the sliced piece is still falling.
     expect(game.isGameOver, isTrue);
-    expect(game.overlays.isActive('gameOver'), isTrue);
+    expect(game.overlays.isActive('gameOver'), isFalse,
+        reason: 'overlay is deferred during the ~0.6s death animation');
+    expect(_falling(game), 1, reason: 'the missed piece is falling');
     expect(scoreState.current, 0, reason: 'a miss does not score');
+
+    // A rage-tap during the death window must do nothing (no drop, no restart).
+    game.dropBlock();
+    await game.ready();
+    expect(scoreState.current, 0, reason: 'tap is debounced while dying');
+
+    // After the delay (0.6s) the overlay appears.
+    _pump(game, 45); // 0.75s > _gameOverDelay
+    await game.ready();
+    expect(game.overlays.isActive('gameOver'), isTrue,
+        reason: 'overlay appears after the death delay');
   });
 
   testWithGame<StackDuelGame>('3: restart resets to a single base block', create,
