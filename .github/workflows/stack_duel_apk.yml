@@ -65,11 +65,15 @@ jobs:
           mkdir -p ~/.android
           cp ci/debug.keystore ~/.android/debug.keystore
 
-      - name: Build debug APK
-        run: flutter build apk --debug --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}
+      # Release + arm64-only keeps the APK small (~15-25 MB vs a ~150 MB universal
+      # debug build). The S24 is arm64-v8a. The Flutter template signs release
+      # with signingConfigs.debug, i.e. our pinned keystore above, so the
+      # signature is unchanged and updates still install over previous builds.
+      - name: Build release APK (arm64, slim)
+        run: flutter build apk --release --target-platform android-arm64 --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}
 
       - name: Name APK with commit sha
-        run: cp build/app/outputs/flutter-apk/app-debug.apk "build/app/outputs/flutter-apk/stack-duel-${{ steps.vars.outputs.sha }}.apk"
+        run: cp build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/stack-duel-${{ steps.vars.outputs.sha }}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
