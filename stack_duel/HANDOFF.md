@@ -98,6 +98,14 @@ purpose, so it can be reviewed and unit-tested in isolation. `dropBlock()` in
 `computeOverlap`, then applies the result (replace top block, spawn overhang,
 score, spawn next).
 
+> **INVARIANT — do not break (audit delta #6).** The current math is correct
+> *because the dropped block has the SAME width as the top block*, so the overhang
+> is on at most ONE side. The math is sound today (max/min overlap, edge-touch =
+> game over, center recomputed). But any future rule that changes a block's width
+> — a Perfect "width restore", a width bonus, a wider block — would violate the
+> one-side-overhang assumption. If you add such a rule, update this invariant AND
+> add a covering case in `slice_math_check.dart` first.
+
 ---
 
 ## 4. Dependencies (VERIFIED versions from pubspec.lock)
@@ -259,8 +267,12 @@ the loop is fun. Implement ONE per build, verify on S24 (see §13 one-knob rule)
 1. **Haptics on slice** — light `HapticFeedback` on a successful drop, heavier on
    game over. Tiny change, big perceived polish.
 2. **"Perfect" placement + combo** — if `|drop center - top center|` is within a
-   small epsilon, treat as perfect: a visual/score pop and (optionally) no
-   narrowing on that drop. Two HARD constraints from the owner (do not violate):
+   small epsilon, treat as perfect: a visual/score pop and a combo increment.
+   **The slice still happens normally — Perfect does NOT preserve width.**
+   (Audit delta #1: under the `_maxSpeed = 460` cap there is a difficulty
+   ceiling, so a "no-narrowing" Perfect would become a survival/immortality mode;
+   the speed ramp alone cannot prevent it. Perfect = feel + combo, never armor.)
+   Two HARD constraints from the owner (do not violate):
    - **2a. Perfect must NOT remove fail-pressure.** Perfect is a *skill ceiling,
      not an immortality mode.* Keep the aggressive speed ramp so perfects get
      genuinely harder to land as score climbs; tension must never disappear.
@@ -268,8 +280,10 @@ the loop is fun. Implement ONE per build, verify on S24 (see §13 one-knob rule)
      consecutive-perfect streak drives a score multiplier that LATER maps onto
      coins and feeds rewarded "double coins". Put both pure functions in
      `slice_math.dart`: `isPerfect(...)` and `comboMultiplier(streak)`, each with
-     asserts in `slice_math_check.dart`. Designing combo now means the economy
-     drops in later with zero rework.
+     asserts in `slice_math_check.dart`. **`comboMultiplier(streak)` MUST be
+     capped (it saturates at a max).** Uncapped it becomes a coin inflator once it
+     feeds rewarded double-coins (audit delta #2). Designing combo now means the
+     economy drops in later with zero rework.
 3. **Deferred game over** — let the sliced piece fall ~0.5s *before* the overlay
    (today `pauseEngine()` freezes it instantly). Pure feel.
 4. **Tap debounce during that ~0.5s fall** — while the game-over animation plays,
@@ -279,9 +293,12 @@ the loop is fun. Implement ONE per build, verify on S24 (see §13 one-knob rule)
    playing". A menu or delay between death and the next block kills retention
    harder than missing sound. **Measure on S24:** taps and seconds from game over
    to the first moving block; target one tap, sub-second.
-6. **Analytics event stubs (no provider yet)** — add empty hook calls now:
-   `game_start`, `game_over(score, blocks, perfects)`, `restart`. When ads/
-   analytics arrive the events are already wired → zero rework.
+6. **Analytics event stubs (no provider yet) — REQUIRED for Day-2 exit.** Add
+   empty hook calls now: `game_start`, `game_over(score, blocks, perfects)`,
+   `restart`, `perfect`, `combo_changed`. When ads/analytics arrive the events
+   are already wired → zero rework. (Audit delta #5: Day 3 is ad-driven; shipping
+   monetization without events = measuring revenue blind. So these are not
+   optional polish — they gate Day-2 close, see §14.)
 7. **Slice/placement animation polish & color progression** — brief scale/flash
    pop on placed block; smooth hue-by-height so climbing feels rewarding.
 
@@ -341,10 +358,16 @@ added before Day 3 must stay compatible with this contract.**
 - **Perfect → combo → coins.** The combo multiplier (built in Tier 1, §10.2b) is
   the source of coin income. Keep `comboMultiplier(streak)` pure and the single
   source of truth so coins later derive from it directly.
+- **Combo multiplier is capped (saturates at a max).** Uncapped, strong players
+  farm ever-more coins and rewarded double-coins amplifies the skew (audit
+  delta #2). The cap is the economy's inflation guard.
 - **Rewarded ad = continue + double coins.** Opt-in only. A rewarded view may
-  revive the current run once and/or double the run's coin payout.
-- **Interstitial cadence = every 3rd game over.** Not on every death (kills
-  retention), not random.
+  revive the current run once and/or double the run's coin payout. Rewarded is
+  the PRIMARY ad unit; interstitial is filler.
+- **Interstitial cadence = every 3rd *eligible* game over**, with a minimum
+  session time / round count before the FIRST interstitial (audit delta #3). Not
+  on every death (kills retention), not random, and never in the opening
+  ~30–60s of a session — short early deaths must not get hammered.
 - **Implication for anyone touching Perfect:** Perfect MUST remain tied to the
   combo system. Do **not** implement Perfect as a standalone "no-narrowing"
   bonus disconnected from `comboMultiplier`, or the economy has to be rebuilt.
@@ -363,7 +386,7 @@ here whenever one is changed.
 | Knob | Where | Current value | Notes |
 |---|---|---|---|
 | Block speed ramp | `stack_duel_game.dart` `_baseSpeed/_speedPerPoint/_maxSpeed` | 120 / 8 / 460 px/s | the difficulty curve; keep aggressive (see §10.2a) |
-| Perfect window (epsilon) | `slice_math.dart` (to be added) | — (not built yet) | how forgiving "perfect" is; smaller = harder |
+| Perfect window (epsilon) | `slice_math.dart` (to be added) | — (not built yet) | how forgiving "perfect" is; smaller = harder. Affects feedback + combo ONLY — never block width (see §10.2 delta #1) |
 | Camera lead / easing | `stack_duel_game.dart` `_topMargin` (0.22) + lerp `dt*6` | 0.22 / 6 | how far ahead the camera looks + how snappy it follows |
 
 ---
@@ -376,7 +399,13 @@ hard finish line. **Day 2 is CLOSED when ALL of:**
   it and that a streak is building);
 - (b) haptics present (slice + game over);
 - (c) restart is one tap, under 1 second;
-- (d) the owner replays **≥10 times in a row, unprompted**.
+- (d) the owner replays **≥10 times in a row, unprompted**;
+- (e) **core feel not degraded** (audit delta #4) — after the juice, the Day-1
+  loop does NOT feel worse; the owner's Best / average run must not subjectively
+  drop. Juice must make it better, not just noisier. The bar is "feels better,"
+  not "has more stuff";
+- (f) **analytics stubs wired** (audit delta #5) — `game_start`, `game_over`,
+  `restart`, `perfect`, `combo_changed` fire as no-ops, ready for a provider.
 
 When (a)–(d) hold: **STOP polishing** and move to Day 3 (§10 / §12). Do not add a
 12th juice tweak instead of starting monetization. The goal of the Day-3 build is
