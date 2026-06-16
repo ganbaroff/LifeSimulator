@@ -56,6 +56,15 @@ jobs:
         id: vars
         run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
+      # Use a fixed debug keystore so every build shares ONE signing identity.
+      # Without this, each runner generates a random ~/.android/debug.keystore,
+      # so each APK is signed differently and Android refuses to update the app
+      # over a previously sideloaded build ("App not installed" / no update).
+      - name: Install stable debug keystore
+        run: |
+          mkdir -p ~/.android
+          cp ci/debug.keystore ~/.android/debug.keystore
+
       - name: Build debug APK
         run: flutter build apk --debug --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}
 
