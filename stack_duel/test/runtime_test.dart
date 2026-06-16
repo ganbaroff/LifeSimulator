@@ -24,9 +24,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:stack_duel/game/falling_piece.dart';
+import 'package:stack_duel/game/haptics.dart';
 import 'package:stack_duel/game/stack_block.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
 import 'package:stack_duel/state/score_state.dart';
+
+/// Counts haptic calls so tests can assert feedback fires on the right events
+/// (without invoking a real platform channel).
+class FakeHaptics implements Haptics {
+  int successCount = 0;
+  int gameOverCount = 0;
+
+  @override
+  void success() => successCount++;
+
+  @override
+  void gameOver() => gameOverCount++;
+}
 
 List<StackBlock> _blocks(StackDuelGame g) =>
     g.world.children.whereType<StackBlock>().toList();
@@ -51,14 +65,17 @@ void _pump(StackDuelGame g, int frames) {
 
 void main() {
   late ScoreState scoreState;
+  late FakeHaptics haptics;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     scoreState = ScoreState();
     await scoreState.load();
+    haptics = FakeHaptics();
   });
 
-  StackDuelGame create() => StackDuelGame(scoreState: scoreState);
+  StackDuelGame create() =>
+      StackDuelGame(scoreState: scoreState, haptics: haptics);
 
   testWithGame<StackDuelGame>('boots with a base + one moving block', create,
       (game) async {
@@ -170,5 +187,29 @@ void main() {
     expect(_resting(game), 1, reason: 'tower back to a single base');
     expect(_blocks(game).where((b) => b.moving).length, 1);
     expect(_falling(game), 0);
+  });
+
+  testWithGame<StackDuelGame>(
+      'haptics: success fires on a scoring drop, not game over', create,
+      (game) async {
+    await game.ready();
+    _moving(game).position.x = _top(game).position.x; // aligned -> scores
+    game.dropBlock();
+    await game.ready();
+
+    expect(haptics.successCount, 1, reason: 'one success buzz per scoring drop');
+    expect(haptics.gameOverCount, 0);
+  });
+
+  testWithGame<StackDuelGame>(
+      'haptics: game over fires on a miss, not success', create, (game) async {
+    await game.ready();
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+    _moving(game).position.x = _top(game).right + 40; // no overlap -> miss
+    game.dropBlock();
+    await game.ready();
+
+    expect(haptics.gameOverCount, 1, reason: 'one heavy buzz on death');
+    expect(haptics.successCount, 0, reason: 'a miss is not a success');
   });
 }

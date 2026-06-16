@@ -7,15 +7,19 @@ import 'package:flutter/material.dart';
 
 import '../state/score_state.dart';
 import 'falling_piece.dart';
+import 'haptics.dart';
 import 'slice_math.dart';
 import 'stack_block.dart';
 
 /// Stack Duel: tap to drop the moving block onto the tower. Misaligned drops
 /// get sliced; missing entirely ends the run.
 class StackDuelGame extends FlameGame {
-  StackDuelGame({required this.scoreState});
+  StackDuelGame({required this.scoreState, this.haptics = const DeviceHaptics()});
 
   final ScoreState scoreState;
+
+  /// Tactile feedback seam (injected so tests can use a fake).
+  final Haptics haptics;
 
   /// Height of every block (logical px).
   static const double blockHeight = 40;
@@ -208,12 +212,14 @@ class StackDuelGame extends FlameGame {
     }
 
     scoreState.increment();
+    haptics.success();
     _updateHud();
     _spawnMovingBlock();
   }
 
   Future<void> _endRun() async {
     isGameOver = true;
+    haptics.gameOver();
     await scoreState.maybeUpdateBest();
     _updateHud();
     overlays.add('gameOver');
