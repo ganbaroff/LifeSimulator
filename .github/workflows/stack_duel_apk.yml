@@ -15,6 +15,8 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: stack_duel
@@ -50,9 +52,22 @@ jobs:
       - name: Build debug APK
         run: flutter build apk --debug
 
+      - name: Rename APK
+        run: cp build/app/outputs/flutter-apk/app-debug.apk build/app/outputs/flutter-apk/stack-duel-debug.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: stack-duel-debug-apk
-          path: stack_duel/build/app/outputs/flutter-apk/app-debug.apk
+          path: stack_duel/build/app/outputs/flutter-apk/stack-duel-debug.apk
           if-no-files-found: error
+
+      # Publish a phone-friendly direct download: a Release asset needs no
+      # GitHub login and is not zipped, so it installs straight from the link.
+      - name: Publish APK to a Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: stack-duel-latest
+          name: Stack Duel (latest debug build)
+          body: "Installable debug APK. Tap the .apk below on your phone to install."
+          files: stack_duel/build/app/outputs/flutter-apk/stack-duel-debug.apk
