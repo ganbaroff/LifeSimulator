@@ -1,0 +1,15 @@
+# Dart/Flutter generated
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.apk
+
+# Platform scaffolding (generated locally via `flutter create .`)
+android/
+ios/
+linux/
+macos/
+windows/
+web/
