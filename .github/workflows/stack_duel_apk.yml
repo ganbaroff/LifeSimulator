@@ -1,0 +1,58 @@
+name: Stack Duel APK
+
+# Builds an installable debug APK in the cloud so it can be sideloaded onto a
+# phone without a local Android toolchain. Triggers on pushes that touch the
+# game, and can be run on demand from the Actions tab.
+on:
+  push:
+    branches:
+      - claude/stack-duel-flutter-game-dv0n5r
+    paths:
+      - "stack_duel/**"
+      - ".github/workflows/stack_duel_apk.yml"
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stack_duel
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Analyze
+        run: flutter analyze
+
+      # The android/ scaffold is intentionally gitignored, so generate it here.
+      # This only adds platform files; it never touches lib/ or pubspec.
+      - name: Generate Android scaffold
+        run: flutter create --platforms=android .
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stack-duel-debug-apk
+          path: stack_duel/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
