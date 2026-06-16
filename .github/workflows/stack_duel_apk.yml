@@ -49,25 +49,33 @@ jobs:
       - name: Generate Android scaffold
         run: flutter create --platforms=android .
 
-      - name: Build debug APK
-        run: flutter build apk --debug
+      # Short commit sha drives BOTH the on-screen build badge and the APK
+      # filename, so the download URL is unique per commit (cache-proof) and the
+      # player can read the running build on screen.
+      - name: Short SHA
+        id: vars
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-debug.apk build/app/outputs/flutter-apk/stack-duel-debug.apk
+      - name: Build debug APK
+        run: flutter build apk --debug --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}
+
+      - name: Name APK with commit sha
+        run: cp build/app/outputs/flutter-apk/app-debug.apk "build/app/outputs/flutter-apk/stack-duel-${{ steps.vars.outputs.sha }}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: stack-duel-debug-apk
-          path: stack_duel/build/app/outputs/flutter-apk/stack-duel-debug.apk
+          name: stack-duel-${{ steps.vars.outputs.sha }}
+          path: stack_duel/build/app/outputs/flutter-apk/stack-duel-${{ steps.vars.outputs.sha }}.apk
           if-no-files-found: error
 
       # Publish a phone-friendly direct download: a Release asset needs no
       # GitHub login and is not zipped, so it installs straight from the link.
+      # Unique per-commit filename defeats client-side download caching.
       - name: Publish APK to a Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: stack-duel-latest
           name: Stack Duel (latest debug build)
-          body: "Installable debug APK. Tap the .apk below on your phone to install."
-          files: stack_duel/build/app/outputs/flutter-apk/stack-duel-debug.apk
+          body: "Installable debug APK (unique per commit). The on-screen BUILD tag matches the sha in the filename."
+          files: stack_duel/build/app/outputs/flutter-apk/stack-duel-${{ steps.vars.outputs.sha }}.apk

@@ -204,6 +204,18 @@ void main() {
   });
 
   testWithGame<StackDuelGame>(
+      'build badge is shown on screen (deployment proof)', create,
+      (game) async {
+    await game.ready();
+    final texts = game.camera.viewport.children
+        .whereType<TextComponent>()
+        .map((t) => t.text)
+        .toList();
+    expect(texts.any((t) => t.startsWith('BUILD ')), isTrue,
+        reason: 'a BUILD <tag> badge must be visible to confirm the build');
+  });
+
+  testWithGame<StackDuelGame>(
       'haptics: success fires on a scoring drop, not game over', create,
       (game) async {
     await game.ready();

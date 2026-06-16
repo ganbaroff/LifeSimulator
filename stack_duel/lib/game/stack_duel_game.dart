@@ -11,6 +11,11 @@ import 'haptics.dart';
 import 'slice_math.dart';
 import 'stack_block.dart';
 
+/// Build identifier shown on screen so a player can confirm exactly which build
+/// they are running (cache-proof deployment check). CI injects the commit sha
+/// via `--dart-define=BUILD_TAG=<sha>`; defaults to 'dev' for local runs.
+const String kBuildTag = String.fromEnvironment('BUILD_TAG', defaultValue: 'dev');
+
 /// Stack Duel: tap to drop the moving block onto the tower. Misaligned drops
 /// get sliced; missing entirely ends the run.
 class StackDuelGame extends FlameGame {
@@ -74,6 +79,15 @@ class StackDuelGame extends FlameGame {
     ),
   );
 
+  /// On-screen build badge (deployment proof).
+  final TextPaint _buildPaint = TextPaint(
+    style: const TextStyle(
+      color: Color(0xFFF1C40F),
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+    ),
+  );
+
   @override
   Color backgroundColor() => const Color(0xFF1B2430);
 
@@ -86,6 +100,14 @@ class StackDuelGame extends FlameGame {
       anchor: Anchor.topLeft,
     );
     camera.viewport.add(_scoreText);
+
+    // Build badge so the player can confirm which build is actually installed.
+    camera.viewport.add(TextComponent(
+      text: 'BUILD $kBuildTag',
+      textRenderer: _buildPaint,
+      position: Vector2(16, 52),
+      anchor: Anchor.topLeft,
+    ));
 
     // Full-screen tap catcher (component-based TapCallbacks). Lives in the
     // viewport so it covers the screen regardless of camera scroll.
