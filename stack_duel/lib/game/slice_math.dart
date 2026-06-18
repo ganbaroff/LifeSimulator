@@ -117,3 +117,15 @@ int comboMultiplier(int streak) {
   final m = 1 + streak;
   return m > maxMultiplier ? maxMultiplier : m;
 }
+
+/// Width the resting block grows back to on a perfect drop.
+///
+/// Genre standard (original "Stack"): a perfect placement nudges the block wider
+/// again by [restoreStep], CAPPED at [baseWidth]. This is the flow hook — perfect
+/// has a tangible gameplay payoff, not just a score pop. It is NOT immortality:
+/// growth is capped at the base width, any non-perfect drop still narrows the
+/// tower, and the speed ramp keeps landing perfects genuinely hard.
+double restoredWidth(double overlapWidth, double baseWidth, double restoreStep) {
+  final w = overlapWidth + restoreStep;
+  return w > baseWidth ? baseWidth : w;
+}

@@ -375,6 +375,15 @@ added before Day 3 must stay compatible with this contract.**
 If a proposed change conflicts with any bullet above, stop and flag it rather
 than "improving" past it.
 
+> **DESIGN UPDATE (Build #5) — audit delta #1 reversed, on the owner's directive
+> "match world standards, not feelings".** Perfect now GROWS the block back by
+> `_perfectRestore` (capped at base width) — the genre-defining flow hook of the
+> original "Stack". This is NOT the immortality the audit feared: growth is hard-
+> capped at base, every non-perfect drop still narrows, and the speed ramp keeps
+> perfects hard. It remains tied to the perfect/combo system (still feeds
+> `comboMultiplier`), so it is consistent with the contract above — it is a
+> capped, combo-gated recovery, not a free no-narrowing bonus.
+
 ---
 
 ## 13. Tuning knobs (one knob per build)
@@ -386,7 +395,8 @@ here whenever one is changed.
 | Knob | Where | Current value | Notes |
 |---|---|---|---|
 | Block speed ramp | `stack_duel_game.dart` `_baseSpeed/_speedPerPoint/_maxSpeed` | 120 / 8 / 460 px/s | the difficulty curve; keep aggressive (see §10.2a) |
-| Perfect window (epsilon) | `stack_duel_game.dart` `_perfectEpsilon` (math in `slice_math.dart` `isPerfect`) | 8 px (built; starting value — tune on device) | how forgiving "perfect" is; smaller = harder. Affects feedback + combo ONLY — never block width (see §10.2 delta #1) |
+| Perfect window (epsilon) | `stack_duel_game.dart` `_perfectEpsilon` (math in `slice_math.dart` `isPerfect`) | 8 px (built; starting value — tune on device) | how forgiving "perfect" is; smaller = harder |
+| Perfect width-restore | `stack_duel_game.dart` `_perfectRestore` (math in `slice_math.dart` `restoredWidth`) | 14 px/perfect, capped at base | the genre flow hook: perfect grows the block back (see §10.2 / DESIGN UPDATE) |
 | Combo cap | `slice_math.dart` `comboMultiplier` | 8x max | inflation guard for future coins (audit delta #2) |
 | Camera lead / easing | `stack_duel_game.dart` `_topMargin` (0.22) + lerp `dt*6` | 0.22 / 6 | how far ahead the camera looks + how snappy it follows |
 
@@ -432,11 +442,18 @@ Each build = one change → CI → device test. Newest last.
   Device-confirmed at badge `a51182e` (full RCA + guardrails in the plan file).
 - **Build #3** — Slim APK: `flutter build apk --release --target-platform
   android-arm64`. ~150 MB → **15.0 MB** (verified). Same keystore signs release.
-- **Build #4 (current, sha f508547)** — Perfect + capped combo:
-  `isPerfect` + `comboMultiplier` (cap 8x) in `slice_math.dart`; combo streak,
-  multiplied score, `Combo ×N` HUD, transient PERFECT flash, perfect haptic;
-  analytics stubs wired. Tests: slice **21/21**, runtime **11/11**, analyze clean.
-  APK 15 MB live. **Awaiting device verdict (does combo make it more engaging?).**
+- **Build #4 (sha f508547)** — Perfect + capped combo: `isPerfect` +
+  `comboMultiplier` (cap 8x); combo streak, multiplied score, `Combo ×N` HUD,
+  PERFECT flash, perfect haptic; analytics stubs wired.
+- **Build #5 (current) — Engagement pass (genre standard).** Owner feedback: "just
+  one tap, nothing else — compare to world standards, not my feelings." Added the
+  genre flow hook: **perfect grows the block back** (`restoredWidth`, capped at
+  base) — reverses audit delta #1 (see §12 DESIGN UPDATE). Plus landing juice
+  (white flash, brighter on perfect). Tests: slice **24/24**, runtime **12/12**,
+  analyze clean.
 
-Next gate: device verdict on #4 → then re-check §14. Do not ship another feature
-build before that verdict (one-feature-per-build rule).
+Process change (owner): work autonomously in batches, judge against genre
+standards, surface a build only at a meaningful milestone — not every increment.
+
+Biggest remaining standard gap: **audio** (rising pitch per perfect is a genre
+signature) — currently out of scope (no assets). Flag for a Day-2.5/Day-3 decision.

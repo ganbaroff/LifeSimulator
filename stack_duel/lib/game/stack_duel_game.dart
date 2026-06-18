@@ -56,6 +56,11 @@ class StackDuelGame extends FlameGame {
   /// starting value to be tuned by feel on the S24, not a final pick.
   static const double _perfectEpsilon = 8;
 
+  /// How much width a perfect drop grows back (px), capped at the base width.
+  /// Genre flow hook (§13 knob). Not immortality: capped + speed ramp + any
+  /// non-perfect drop narrows.
+  static const double _perfectRestore = 14;
+
   /// Flat color palette cycled per height for visual variety.
   static const List<Color> _palette = [
     Color(0xFFE74C3C),
@@ -86,6 +91,9 @@ class StackDuelGame extends FlameGame {
 
   /// Consecutive-perfect streak. Drives the score multiplier (and future coins).
   int _combo = 0;
+
+  /// Original base-block width; the cap for the perfect width-restore.
+  late double _baseWidth;
 
   late TextComponent _scoreText;
   late TextComponent _comboText;
@@ -177,10 +185,10 @@ class StackDuelGame extends FlameGame {
     _centerX = size.x / 2;
 
     // Base block.
-    final baseWidth = size.x * 0.45;
+    _baseWidth = size.x * 0.45;
     final base = StackBlock(
-      position: Vector2(_centerX - baseWidth / 2, 0),
-      size: Vector2(baseWidth, blockHeight),
+      position: Vector2(_centerX - _baseWidth / 2, 0),
+      size: Vector2(_baseWidth, blockHeight),
       color: _palette[0],
     );
     _tower.add(base);
@@ -271,17 +279,31 @@ class StackDuelGame extends FlameGame {
       return;
     }
 
-    // Replace the moving block with the trimmed resting block (the overlap).
     world.remove(moving);
+
+    // Perfect = dropped centre within epsilon of the top centre.
+    final topCenter = (top.left + top.right) / 2;
+    final dropCenter = (moving.left + moving.right) / 2;
+    final perfect = isPerfect(topCenter, dropCenter, _perfectEpsilon);
+
+    // The resting block is the overlap; on a perfect it grows back a little
+    // (capped at the base width, recentred on the overlap) — the genre flow hook.
+    var restWidth = result.newWidth;
+    var restLeft = result.newLeft;
+    if (perfect) {
+      restWidth = restoredWidth(result.newWidth, _baseWidth, _perfectRestore);
+      restLeft = result.newCenterX - restWidth / 2;
+    }
     final resting = StackBlock(
-      position: Vector2(result.newLeft, y),
-      size: Vector2(result.newWidth, blockHeight),
+      position: Vector2(restLeft, y),
+      size: Vector2(restWidth, blockHeight),
       color: moving.color,
     );
     _tower.add(resting);
     world.add(resting);
+    _spawnLandingFlash(restLeft, y, restWidth, perfect);
 
-    // Spawn the sliced overhang as a falling piece.
+    // Spawn the sliced overhang (part of the dropped block outside the overlap).
     if (result.hasOverhang) {
       world.add(FallingPiece(
         position: Vector2(result.overhangLeft, y),
@@ -290,13 +312,6 @@ class StackDuelGame extends FlameGame {
         removeBelowY: y + 2000,
       ));
     }
-
-    // Perfect = the dropped block's center is within the epsilon window of the
-    // top block's center. It only grants feedback + combo; the slice above still
-    // narrowed the tower normally (no width armor).
-    final topCenter = (top.left + top.right) / 2;
-    final dropCenter = (moving.left + moving.right) / 2;
-    final perfect = isPerfect(topCenter, dropCenter, _perfectEpsilon);
 
     final prevCombo = _combo;
     _combo = perfect ? _combo + 1 : 0;
@@ -326,6 +341,22 @@ class StackDuelGame extends FlameGame {
       anchor: Anchor.center,
     )..add(RemoveEffect(delay: 0.55));
     camera.viewport.add(flash);
+  }
+
+  /// White flash over a just-placed block that fades out — landing juice.
+  /// Brighter and slightly larger on a perfect.
+  void _spawnLandingFlash(double left, double y, double width, bool perfect) {
+    final pad = perfect ? 6.0 : 0.0;
+    final dur = perfect ? 0.30 : 0.16;
+    final flash = RectangleComponent(
+      position: Vector2(left - pad, y - pad),
+      size: Vector2(width + pad * 2, blockHeight + pad * 2),
+      paint: Paint()
+        ..color = Color(perfect ? 0xCCFFFFFF : 0x66FFFFFF),
+    )
+      ..add(OpacityEffect.fadeOut(EffectController(duration: dur)))
+      ..add(RemoveEffect(delay: dur));
+    world.add(flash);
   }
 
   Future<void> _endRun() async {

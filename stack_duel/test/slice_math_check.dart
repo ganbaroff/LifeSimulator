@@ -90,6 +90,11 @@ void main() {
   check('combo: streak 2 -> 3x', comboMultiplier(2) == 3);
   check('combo: caps at 8x', comboMultiplier(7) == 8 && comboMultiplier(100) == 8);
 
+  // 9) restoredWidth: a perfect grows width by step, capped at base.
+  check('restore: grows by step', near(restoredWidth(50, 100, 14), 64));
+  check('restore: caps at base', near(restoredWidth(95, 100, 14), 100));
+  check('restore: at base stays base', near(restoredWidth(100, 100, 14), 100));
+
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {
     throw StateError('slice math verification failed');

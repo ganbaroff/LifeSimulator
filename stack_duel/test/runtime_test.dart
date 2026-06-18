@@ -245,6 +245,29 @@ void main() {
   });
 
   testWithGame<StackDuelGame>(
+      'perfect restores width back (capped at base, no immortality)', create,
+      (game) async {
+    await game.ready();
+    final base = _top(game).size.x;
+
+    // A non-perfect drop narrows the tower.
+    _moving(game).position.x = _top(game).position.x + 30;
+    game.dropBlock();
+    await game.ready();
+    final narrowed = _top(game).size.x;
+    expect(narrowed, lessThan(base), reason: 'non-perfect narrows');
+
+    // A perfect drop grows it back a little — but never beyond the base width.
+    _moving(game).position.x = _top(game).position.x; // aligned to new top centre
+    game.dropBlock();
+    await game.ready();
+    final restored = _top(game).size.x;
+    expect(restored, greaterThan(narrowed), reason: 'perfect restores width');
+    expect(restored, lessThanOrEqualTo(base + 0.001),
+        reason: 'restore is capped at the base width');
+  });
+
+  testWithGame<StackDuelGame>(
       'haptics: success fires on a non-perfect scoring drop, not game over',
       create, (game) async {
     await game.ready();
