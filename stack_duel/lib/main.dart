@@ -2,26 +2,34 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import 'game/stack_duel_game.dart';
+import 'state/coin_state.dart';
 import 'state/score_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load the persisted best score before the game starts.
+  // Load persisted progress before the game starts.
   final scoreState = ScoreState();
   await scoreState.load();
+  final coinState = CoinState();
+  await coinState.load();
 
-  runApp(StackDuelApp(scoreState: scoreState));
+  runApp(StackDuelApp(scoreState: scoreState, coinState: coinState));
 }
 
 class StackDuelApp extends StatelessWidget {
-  const StackDuelApp({super.key, required this.scoreState});
+  const StackDuelApp({
+    super.key,
+    required this.scoreState,
+    required this.coinState,
+  });
 
   final ScoreState scoreState;
+  final CoinState coinState;
 
   @override
   Widget build(BuildContext context) {
-    final game = StackDuelGame(scoreState: scoreState);
+    final game = StackDuelGame(scoreState: scoreState, coinState: coinState);
 
     return MaterialApp(
       title: 'Stack Duel',

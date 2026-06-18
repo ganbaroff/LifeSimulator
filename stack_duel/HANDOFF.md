@@ -472,3 +472,17 @@ Strategic decision (owner: "decide yourself"): stay on Flutter/Flame (the only
 stack that builds phone-only via cloud CI); borrow polish from MIT-licensed Flame
 OSS + free/CC0 (or self-made) assets; do NOT switch to Unity (would break the
 phone-only pipeline).
+
+- **Build #7 (current) — Day-3 economy scaffold (inert, no native SDK yet).**
+  `state/coin_state.dart` (persisted, cosmetic-only coins; +1 per perfect, banked
+  on game over), `game/ads.dart` (`Ads` seam + `NoopAds`; interstitial trigger
+  every 3rd game over, decided in-game per §12), coin HUD line, analytics events
+  (coins_earned, ad_interstitial). All behind fakes → headless-testable. Tests:
+  slice 24/24, runtime **15/15** (coins banked on game over; interstitial only on
+  the 3rd game over). NO real ads/skins UI/rewarded yet — see below.
+
+Day-3 remaining (needs owner inputs / follow-up builds): real `google_mobile_ads`
+impl swapped into the `Ads` seam (AdMob app/ad-unit ids, manifest App ID via a CI
+step, TEST ids first); rewarded (continue + double coins) + its UI button; a skin
+sink (coins → flat palette swaps) + a minimal menu; store-readiness (package id,
+icon/name, release keystore, privacy policy, app-bundle).

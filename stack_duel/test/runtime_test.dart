@@ -23,12 +23,22 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:stack_duel/game/ads.dart';
 import 'package:stack_duel/game/falling_piece.dart';
 import 'package:stack_duel/game/haptics.dart';
 import 'package:stack_duel/game/sound.dart';
 import 'package:stack_duel/game/stack_block.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
+import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/score_state.dart';
+
+/// Counts interstitial requests (no real ad SDK in tests).
+class FakeAds implements Ads {
+  int interstitialCount = 0;
+
+  @override
+  void showInterstitial() => interstitialCount++;
+}
 
 /// Counts sound calls (no real audio in headless tests).
 class FakeSound implements Sound {
@@ -93,21 +103,28 @@ void _pump(StackDuelGame g, int frames) {
 
 void main() {
   late ScoreState scoreState;
+  late CoinState coinState;
   late FakeHaptics haptics;
   late FakeSound sound;
+  late FakeAds ads;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     scoreState = ScoreState();
     await scoreState.load();
+    coinState = CoinState();
+    await coinState.load();
     haptics = FakeHaptics();
     sound = FakeSound();
+    ads = FakeAds();
   });
 
   StackDuelGame create() => StackDuelGame(
         scoreState: scoreState,
+        coinState: coinState,
         haptics: haptics,
         sound: sound,
+        ads: ads,
       );
 
   testWithGame<StackDuelGame>('boots with a base + one moving block', create,
@@ -334,6 +351,48 @@ void main() {
     game.dropBlock();
     await game.ready();
     expect(sound.gameOverCount, 1);
+  });
+
+  testWithGame<StackDuelGame>(
+      'coins: earn one coin per perfect, banked on game over', create,
+      (game) async {
+    await game.ready();
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+
+    _moving(game).position.x = _top(game).position.x; // perfect 1
+    game.dropBlock();
+    await game.ready();
+    _moving(game).position.x = _top(game).position.x; // perfect 2
+    game.dropBlock();
+    await game.ready();
+    expect(coinState.total, 0, reason: 'coins bank on game over, not mid-run');
+
+    _moving(game).position.x = _top(game).right + 60; // miss
+    game.dropBlock();
+    await game.ready();
+    expect(coinState.total, 2, reason: 'two perfects -> two coins');
+  });
+
+  testWithGame<StackDuelGame>(
+      'ads: interstitial only every 3rd game over (not 1st/2nd)', create,
+      (game) async {
+    await game.ready();
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+
+    Future<void> dieAndRestart() async {
+      _moving(game).position.x = _top(game).right + 60;
+      game.dropBlock();
+      await game.ready();
+      game.restart();
+      await game.ready();
+    }
+
+    await dieAndRestart(); // 1st game over
+    expect(ads.interstitialCount, 0);
+    await dieAndRestart(); // 2nd
+    expect(ads.interstitialCount, 0);
+    await dieAndRestart(); // 3rd -> interstitial
+    expect(ads.interstitialCount, 1);
   });
 
   testWithGame<StackDuelGame>(

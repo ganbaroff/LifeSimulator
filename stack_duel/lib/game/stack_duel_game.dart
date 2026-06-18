@@ -7,7 +7,9 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
+import '../state/coin_state.dart';
 import '../state/score_state.dart';
+import 'ads.dart';
 import 'analytics.dart';
 import 'falling_piece.dart';
 import 'haptics.dart';
@@ -25,12 +27,17 @@ const String kBuildTag = String.fromEnvironment('BUILD_TAG', defaultValue: 'dev'
 class StackDuelGame extends FlameGame {
   StackDuelGame({
     required this.scoreState,
+    required this.coinState,
     this.haptics = const DeviceHaptics(),
     this.analytics = const NoopAnalytics(),
     this.sound = const GameSound(),
+    this.ads = const NoopAds(),
   });
 
   final ScoreState scoreState;
+
+  /// Persisted soft currency (cosmetic-only; HANDOFF §12).
+  final CoinState coinState;
 
   /// Tactile feedback seam (injected so tests can use a fake).
   final Haptics haptics;
@@ -40,6 +47,9 @@ class StackDuelGame extends FlameGame {
 
   /// Sound seam (real audio by default; tests inject silence).
   final Sound sound;
+
+  /// Ads seam (no-op until the real AdMob impl drops in on Day 3).
+  final Ads ads;
 
   /// Height of every block (logical px).
   static const double blockHeight = 40;
@@ -98,11 +108,18 @@ class StackDuelGame extends FlameGame {
   /// Consecutive-perfect streak. Drives the score multiplier (and future coins).
   int _combo = 0;
 
+  /// Perfects landed in the current run (coins earned on game over).
+  int _perfectsThisRun = 0;
+
+  /// Game-overs this session — drives the interstitial cadence.
+  int _gameOvers = 0;
+
   /// Original base-block width; the cap for the perfect width-restore.
   late double _baseWidth;
 
   late TextComponent _scoreText;
   late TextComponent _comboText;
+  late TextComponent _coinText;
   final TextPaint _hudPaint = TextPaint(
     style: const TextStyle(
       color: Colors.white,
@@ -169,6 +186,14 @@ class StackDuelGame extends FlameGame {
     );
     camera.viewport.add(_comboText);
 
+    _coinText = TextComponent(
+      text: '',
+      textRenderer: _buildPaint,
+      position: Vector2(16, 110),
+      anchor: Anchor.topLeft,
+    );
+    camera.viewport.add(_coinText);
+
     // Full-screen tap catcher (component-based TapCallbacks). Lives in the
     // viewport so it covers the screen regardless of camera scroll.
     camera.viewport.add(_TapLayer(this));
@@ -188,6 +213,7 @@ class StackDuelGame extends FlameGame {
     isGameOver = false;
     _dying = false;
     _combo = 0;
+    _perfectsThisRun = 0;
     scoreState.reset();
 
     _centerX = size.x / 2;
@@ -327,6 +353,7 @@ class StackDuelGame extends FlameGame {
       analytics.event('combo_changed', {'combo': _combo});
     }
     if (perfect) {
+      _perfectsThisRun += 1;
       analytics.event('perfect', {'combo': _combo});
       haptics.perfect();
       sound.perfect(_combo);
@@ -408,6 +435,20 @@ class StackDuelGame extends FlameGame {
       'score': scoreState.current,
       'blocks': _tower.length,
     });
+
+    // Economy: earn one coin per perfect this run (cosmetic-only; §12).
+    if (_perfectsThisRun > 0) {
+      coinState.add(_perfectsThisRun);
+      analytics.event('coins_earned', {'coins': _perfectsThisRun});
+    }
+
+    // Interstitial cadence: every 3rd game over (not the 1st/2nd) — §12.
+    _gameOvers += 1;
+    if (_gameOvers % 3 == 0) {
+      ads.showInterstitial();
+      analytics.event('ad_interstitial', {'count': _gameOvers});
+    }
+
     await scoreState.maybeUpdateBest();
     _updateHud();
   }
@@ -452,6 +493,7 @@ class StackDuelGame extends FlameGame {
     _scoreText.text =
         'Score: ${scoreState.current}    Best: ${scoreState.best}';
     _comboText.text = _combo > 0 ? 'Combo ×${comboMultiplier(_combo)}' : '';
+    _coinText.text = 'Coins: ${coinState.total}';
   }
 
   @override
