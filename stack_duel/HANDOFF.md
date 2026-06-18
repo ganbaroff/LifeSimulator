@@ -386,7 +386,8 @@ here whenever one is changed.
 | Knob | Where | Current value | Notes |
 |---|---|---|---|
 | Block speed ramp | `stack_duel_game.dart` `_baseSpeed/_speedPerPoint/_maxSpeed` | 120 / 8 / 460 px/s | the difficulty curve; keep aggressive (see §10.2a) |
-| Perfect window (epsilon) | `slice_math.dart` (to be added) | — (not built yet) | how forgiving "perfect" is; smaller = harder. Affects feedback + combo ONLY — never block width (see §10.2 delta #1) |
+| Perfect window (epsilon) | `stack_duel_game.dart` `_perfectEpsilon` (math in `slice_math.dart` `isPerfect`) | 8 px (built; starting value — tune on device) | how forgiving "perfect" is; smaller = harder. Affects feedback + combo ONLY — never block width (see §10.2 delta #1) |
+| Combo cap | `slice_math.dart` `comboMultiplier` | 8x max | inflation guard for future coins (audit delta #2) |
 | Camera lead / easing | `stack_duel_game.dart` `_topMargin` (0.22) + lerp `dt*6` | 0.22 / 6 | how far ahead the camera looks + how snappy it follows |
 
 ---
@@ -394,19 +395,48 @@ here whenever one is changed.
 ## 14. Exit criteria — time-box the "feel" (so polish doesn't run forever)
 
 "Done = better on S24" is open-ended; polish can go on indefinitely. Day 2 has a
-hard finish line. **Day 2 is CLOSED when ALL of:**
+hard finish line. **Day 2 is CLOSED when ALL of** (status as of Build #4, sha f508547):
 - (a) Perfect + combo read clearly on device (player understands when they nailed
-  it and that a streak is building);
-- (b) haptics present (slice + game over);
-- (c) restart is one tap, under 1 second;
-- (d) the owner replays **≥10 times in a row, unprompted**;
+  it and that a streak is building); — **shipped (PERFECT flash + Combo ×N HUD); awaiting device verdict.**
+- (b) haptics present (slice + game over); — **shipped (medium/heavy + heavy on perfect); awaiting device verdict.**
+- (c) restart is one tap, under 1 second; — **plausibly met (overlay Restart button = one tap); measure on device.**
+- (d) the owner replays **≥10 times in a row, unprompted**; — **pending (owner behaviour).**
 - (e) **core feel not degraded** (audit delta #4) — after the juice, the Day-1
   loop does NOT feel worse; the owner's Best / average run must not subjectively
   drop. Juice must make it better, not just noisier. The bar is "feels better,"
-  not "has more stuff";
+  not "has more stuff"; — **pending device verdict.**
 - (f) **analytics stubs wired** (audit delta #5) — `game_start`, `game_over`,
-  `restart`, `perfect`, `combo_changed` fire as no-ops, ready for a provider.
+  `restart`, `perfect`, `combo_changed` fire as no-ops, ready for a provider. — **DONE (`lib/game/analytics.dart`, NoopAnalytics; events fired in `stack_duel_game.dart`).**
 
 When (a)–(d) hold: **STOP polishing** and move to Day 3 (§10 / §12). Do not add a
 12th juice tweak instead of starting monetization. The goal of the Day-3 build is
 a revenue signal, full stop.
+
+---
+
+## 15. Day-2 build log (receipts)
+
+Each build = one change → CI → device test. Newest last.
+
+- **Build #1** — Haptics seam (`lib/game/haptics.dart`, injectable). light/heavy
+  impacts. *Looked like it did nothing on device — see deployment fix below.*
+- **Build #2** — Deferred game over (~0.6s fall before overlay) + tap debounce
+  during the death window. Bumped haptic to medium.
+- **Deployment fix (the real blocker)** — for ~3 builds the phone kept running the
+  FIRST apk. Root cause: each CI run signed with a random debug key → Android
+  refused to update. Fixes, all in place and confirmed on device:
+  - `BUILD <sha>` badge on screen (`kBuildTag` via `--dart-define=BUILD_TAG`);
+  - per-commit APK filename/URL (`stack-duel-<sha>.apk`) — cache-proof;
+  - pinned `ci/debug.keystore`, copied to `~/.android/debug.keystore` in CI →
+    stable signature → updates install without uninstalling.
+  Device-confirmed at badge `a51182e` (full RCA + guardrails in the plan file).
+- **Build #3** — Slim APK: `flutter build apk --release --target-platform
+  android-arm64`. ~150 MB → **15.0 MB** (verified). Same keystore signs release.
+- **Build #4 (current, sha f508547)** — Perfect + capped combo:
+  `isPerfect` + `comboMultiplier` (cap 8x) in `slice_math.dart`; combo streak,
+  multiplied score, `Combo ×N` HUD, transient PERFECT flash, perfect haptic;
+  analytics stubs wired. Tests: slice **21/21**, runtime **11/11**, analyze clean.
+  APK 15 MB live. **Awaiting device verdict (does combo make it more engaging?).**
+
+Next gate: device verdict on #4 → then re-check §14. Do not ship another feature
+build before that verdict (one-feature-per-build rule).
