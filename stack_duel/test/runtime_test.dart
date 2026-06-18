@@ -25,9 +25,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:stack_duel/game/falling_piece.dart';
 import 'package:stack_duel/game/haptics.dart';
+import 'package:stack_duel/game/sound.dart';
 import 'package:stack_duel/game/stack_block.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
 import 'package:stack_duel/state/score_state.dart';
+
+/// Counts sound calls (no real audio in headless tests).
+class FakeSound implements Sound {
+  int dropCount = 0;
+  int perfectCount = 0;
+  int gameOverCount = 0;
+  int lastComboLevel = 0;
+
+  @override
+  Future<void> preload() async {}
+
+  @override
+  void drop() => dropCount++;
+
+  @override
+  void perfect(int comboLevel) {
+    perfectCount++;
+    lastComboLevel = comboLevel;
+  }
+
+  @override
+  void gameOver() => gameOverCount++;
+}
 
 /// Counts haptic calls so tests can assert feedback fires on the right events
 /// (without invoking a real platform channel).
@@ -70,16 +94,21 @@ void _pump(StackDuelGame g, int frames) {
 void main() {
   late ScoreState scoreState;
   late FakeHaptics haptics;
+  late FakeSound sound;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     scoreState = ScoreState();
     await scoreState.load();
     haptics = FakeHaptics();
+    sound = FakeSound();
   });
 
-  StackDuelGame create() =>
-      StackDuelGame(scoreState: scoreState, haptics: haptics);
+  StackDuelGame create() => StackDuelGame(
+        scoreState: scoreState,
+        haptics: haptics,
+        sound: sound,
+      );
 
   testWithGame<StackDuelGame>('boots with a base + one moving block', create,
       (game) async {
@@ -278,6 +307,33 @@ void main() {
     expect(haptics.successCount, 1, reason: 'one success buzz per scoring drop');
     expect(haptics.perfectCount, 0);
     expect(haptics.gameOverCount, 0);
+  });
+
+  testWithGame<StackDuelGame>(
+      'sound: rising perfect tone on perfect, tick on non-perfect, thud on death',
+      create, (game) async {
+    await game.ready();
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+
+    // Perfect -> rising perfect tone keyed to combo level.
+    _moving(game).position.x = _top(game).position.x;
+    game.dropBlock();
+    await game.ready();
+    expect(sound.perfectCount, 1);
+    expect(sound.lastComboLevel, 1, reason: 'pitch rises with the streak');
+    expect(sound.dropCount, 0);
+
+    // Non-perfect -> plain tick.
+    _moving(game).position.x = _top(game).position.x + 30;
+    game.dropBlock();
+    await game.ready();
+    expect(sound.dropCount, 1);
+
+    // Miss -> game-over thud.
+    _moving(game).position.x = _top(game).right + 40;
+    game.dropBlock();
+    await game.ready();
+    expect(sound.gameOverCount, 1);
   });
 
   testWithGame<StackDuelGame>(

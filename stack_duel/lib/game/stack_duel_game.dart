@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
+import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
 import '../state/score_state.dart';
@@ -11,6 +12,7 @@ import 'analytics.dart';
 import 'falling_piece.dart';
 import 'haptics.dart';
 import 'slice_math.dart';
+import 'sound.dart';
 import 'stack_block.dart';
 
 /// Build identifier shown on screen so a player can confirm exactly which build
@@ -25,6 +27,7 @@ class StackDuelGame extends FlameGame {
     required this.scoreState,
     this.haptics = const DeviceHaptics(),
     this.analytics = const NoopAnalytics(),
+    this.sound = const GameSound(),
   });
 
   final ScoreState scoreState;
@@ -34,6 +37,9 @@ class StackDuelGame extends FlameGame {
 
   /// Analytics seam (no-op by default; events are wired for Day 3).
   final Analytics analytics;
+
+  /// Sound seam (real audio by default; tests inject silence).
+  final Sound sound;
 
   /// Height of every block (logical px).
   static const double blockHeight = 40;
@@ -137,6 +143,8 @@ class StackDuelGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
+    await sound.preload();
+
     _scoreText = TextComponent(
       text: '',
       textRenderer: _hudPaint,
@@ -321,9 +329,12 @@ class StackDuelGame extends FlameGame {
     if (perfect) {
       analytics.event('perfect', {'combo': _combo});
       haptics.perfect();
+      sound.perfect(_combo);
       _showPerfectFlash();
+      _perfectBurst(restLeft + restWidth / 2, y + blockHeight / 2);
     } else {
       haptics.success();
+      sound.drop();
     }
 
     // Combo multiplier feeds the score (capped — see comboMultiplier).
@@ -341,6 +352,30 @@ class StackDuelGame extends FlameGame {
       anchor: Anchor.center,
     )..add(RemoveEffect(delay: 0.55));
     camera.viewport.add(flash);
+  }
+
+  /// Small white spark burst on a perfect (asset-free, Flame core particles).
+  void _perfectBurst(double cx, double cy) {
+    final rnd = math.Random();
+    world.add(ParticleSystemComponent(
+      position: Vector2(cx, cy),
+      particle: Particle.generate(
+        count: 14,
+        lifespan: 0.5,
+        generator: (i) {
+          final dir = rnd.nextDouble() * math.pi * 2;
+          final speed = 80 + rnd.nextDouble() * 120;
+          return AcceleratedParticle(
+            speed: Vector2(math.cos(dir), math.sin(dir)) * speed,
+            acceleration: Vector2(0, 280),
+            child: CircleParticle(
+              radius: 2.5,
+              paint: Paint()..color = const Color(0xFFFFFFFF),
+            ),
+          );
+        },
+      ),
+    ));
   }
 
   /// White flash over a just-placed block that fades out — landing juice.
@@ -368,6 +403,7 @@ class StackDuelGame extends FlameGame {
     _deathTimer = _gameOverDelay;
     _combo = 0;
     haptics.gameOver();
+    sound.gameOver();
     analytics.event('game_over', {
       'score': scoreState.current,
       'blocks': _tower.length,
