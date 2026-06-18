@@ -20,4 +20,12 @@ class CoinState {
     total += amount;
     await _prefs?.setInt(_key, total);
   }
+
+  /// Spends [amount] coins if affordable; returns true on success.
+  Future<bool> spend(int amount) async {
+    if (amount <= 0 || total < amount) return false;
+    total -= amount;
+    await _prefs?.setInt(_key, total);
+    return true;
+  }
 }

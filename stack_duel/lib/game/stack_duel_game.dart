@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../state/coin_state.dart';
 import '../state/score_state.dart';
+import '../state/skin_state.dart';
 import 'ads.dart';
 import 'analytics.dart';
 import 'falling_piece.dart';
@@ -28,6 +29,7 @@ class StackDuelGame extends FlameGame {
   StackDuelGame({
     required this.scoreState,
     required this.coinState,
+    required this.skinState,
     this.haptics = const DeviceHaptics(),
     this.analytics = const NoopAnalytics(),
     this.sound = const GameSound(),
@@ -38,6 +40,9 @@ class StackDuelGame extends FlameGame {
 
   /// Persisted soft currency (cosmetic-only; HANDOFF §12).
   final CoinState coinState;
+
+  /// Owned/selected cosmetic skins (palette source).
+  final SkinState skinState;
 
   /// Tactile feedback seam (injected so tests can use a fake).
   final Haptics haptics;
@@ -77,16 +82,8 @@ class StackDuelGame extends FlameGame {
   /// non-perfect drop narrows.
   static const double _perfectRestore = 14;
 
-  /// Flat color palette cycled per height for visual variety.
-  static const List<Color> _palette = [
-    Color(0xFFE74C3C),
-    Color(0xFFE67E22),
-    Color(0xFFF1C40F),
-    Color(0xFF2ECC71),
-    Color(0xFF1ABC9C),
-    Color(0xFF3498DB),
-    Color(0xFF9B59B6),
-  ];
+  /// Flat colour palette cycled per height — sourced from the selected skin.
+  List<Color> get _palette => skinState.palette;
 
   /// Tower blocks, base first. The last entry is the current top.
   final List<StackBlock> _tower = [];

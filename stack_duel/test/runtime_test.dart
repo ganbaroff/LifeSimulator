@@ -31,6 +31,7 @@ import 'package:stack_duel/game/stack_block.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/score_state.dart';
+import 'package:stack_duel/state/skin_state.dart';
 
 /// Counts interstitial requests (no real ad SDK in tests).
 class FakeAds implements Ads {
@@ -104,6 +105,7 @@ void _pump(StackDuelGame g, int frames) {
 void main() {
   late ScoreState scoreState;
   late CoinState coinState;
+  late SkinState skinState;
   late FakeHaptics haptics;
   late FakeSound sound;
   late FakeAds ads;
@@ -114,6 +116,8 @@ void main() {
     await scoreState.load();
     coinState = CoinState();
     await coinState.load();
+    skinState = SkinState();
+    await skinState.load();
     haptics = FakeHaptics();
     sound = FakeSound();
     ads = FakeAds();
@@ -122,6 +126,7 @@ void main() {
   StackDuelGame create() => StackDuelGame(
         scoreState: scoreState,
         coinState: coinState,
+        skinState: skinState,
         haptics: haptics,
         sound: sound,
         ads: ads,
@@ -135,6 +140,14 @@ void main() {
         reason: 'exactly one moving block');
     expect(scoreState.current, 0);
     expect(game.overlays.isActive('gameOver'), isFalse);
+  });
+
+  testWithGame<StackDuelGame>('skin: blocks use the selected skin palette',
+      create, (game) async {
+    await game.ready();
+    final base = _blocks(game).firstWhere((b) => !b.moving);
+    expect(base.color, skinState.palette[0],
+        reason: 'block colours come from the selected skin');
   });
 
   testWithGame<StackDuelGame>(

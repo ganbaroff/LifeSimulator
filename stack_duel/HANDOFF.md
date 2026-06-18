@@ -481,8 +481,14 @@ phone-only pipeline).
   slice 24/24, runtime **15/15** (coins banked on game over; interstitial only on
   the 3rd game over). NO real ads/skins UI/rewarded yet — see below.
 
+- **Build #8 (current) — skins (coin sink).** Owner confirmed the loop ("отлично").
+  Makes coins meaningful: `state/skin_state.dart` (3 flat palettes: Sunset free,
+  Ocean 60c, Mono 150c; owned/selected persisted), `coin_state.spend`, blocks now
+  source colours from the selected skin, and a skins picker in the game-over
+  overlay (buy with coins / select). Tests: slice 24/24, runtime+economy **21/21**
+  (coins add/spend, skin buy needs+deducts coins, select/persist, blocks use skin).
+
 Day-3 remaining (needs owner inputs / follow-up builds): real `google_mobile_ads`
 impl swapped into the `Ads` seam (AdMob app/ad-unit ids, manifest App ID via a CI
-step, TEST ids first); rewarded (continue + double coins) + its UI button; a skin
-sink (coins → flat palette swaps) + a minimal menu; store-readiness (package id,
-icon/name, release keystore, privacy policy, app-bundle).
+step, TEST ids first); rewarded (continue + double coins) + its UI button;
+store-readiness (package id, icon/name, release keystore, privacy policy, app-bundle).
