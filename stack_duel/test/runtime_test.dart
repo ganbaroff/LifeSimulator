@@ -31,6 +31,7 @@ import 'package:stack_duel/game/stack_block.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
 import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/daily_seed.dart';
+import 'package:stack_duel/state/duel.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/score_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
@@ -487,5 +488,37 @@ void main() {
     game.playEndless();
     await game.ready();
     expect(game.isDaily, isFalse);
+  });
+
+  testWithGame<StackDuelGame>(
+      'duel: accepting a challenge plays the seed and builds a result + link',
+      create, (game) async {
+    await game.ready();
+    const opponent = DuelChallenge(seed: 20260627, name: 'Alex', score: 50);
+
+    game.playDuel(opponent);
+    await game.ready();
+    expect(game.isDuel, isTrue);
+    expect(game.isDaily, isTrue, reason: 'duel reuses the daily seed engine');
+
+    // Land a couple of perfect drops to put points on the board.
+    _moving(game).position.x = _top(game).position.x;
+    game.dropBlock();
+    await game.ready();
+
+    // The challenge-back link is a duel link carrying THIS run's seed.
+    final link = game.duelLink();
+    expect(link, contains('?duel='));
+    final back = decodeDuel(Uri.parse(link).queryParameters['duel']!);
+    expect(back, isNotNull);
+    expect(back!.seed, 20260627, reason: 'rematch is on the same seed');
+
+    // Verdict reflects our score vs the opponent's.
+    expect(game.duelResult(), contains('Alex'));
+
+    // Endless clears the duel.
+    game.playEndless();
+    await game.ready();
+    expect(game.isDuel, isFalse);
   });
 }

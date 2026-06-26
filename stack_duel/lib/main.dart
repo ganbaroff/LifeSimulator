@@ -6,6 +6,7 @@ import 'game/city_overlay.dart';
 import 'game/stack_duel_game.dart';
 import 'state/city_state.dart';
 import 'state/coin_state.dart';
+import 'state/duel.dart';
 import 'state/score_state.dart';
 import 'state/skin_state.dart';
 
@@ -22,11 +23,19 @@ Future<void> main() async {
   final cityState = CityState();
   await cityState.load();
 
+  // If the page was opened from a duel link (?duel=token), decode the challenge.
+  DuelChallenge? incomingDuel;
+  try {
+    final token = Uri.base.queryParameters['duel'];
+    if (token != null && token.isNotEmpty) incomingDuel = decodeDuel(token);
+  } catch (_) {}
+
   runApp(StackDuelApp(
     scoreState: scoreState,
     coinState: coinState,
     skinState: skinState,
     cityState: cityState,
+    incomingDuel: incomingDuel,
   ));
 }
 
@@ -37,12 +46,14 @@ class StackDuelApp extends StatelessWidget {
     required this.coinState,
     required this.skinState,
     required this.cityState,
+    this.incomingDuel,
   });
 
   final ScoreState scoreState;
   final CoinState coinState;
   final SkinState skinState;
   final CityState cityState;
+  final DuelChallenge? incomingDuel;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +72,8 @@ class StackDuelApp extends StatelessWidget {
           game: game,
           initialActiveOverlays: const ['start'],
           overlayBuilderMap: {
-            'start': (context, game) => StartOverlay(game: game),
+            'start': (context, game) =>
+                StartOverlay(game: game, duel: incomingDuel),
             'gameOver': (context, game) => GameOverOverlay(game: game),
             'city': (context, game) => CityOverlay(game: game),
           },
@@ -71,11 +83,13 @@ class StackDuelApp extends StatelessWidget {
   }
 }
 
-/// Title screen shown on launch. Tap anywhere to start playing.
+/// Title screen shown on launch: Play, Daily Challenge, and — if the page was
+/// opened from a duel link — an Accept-the-duel banner.
 class StartOverlay extends StatelessWidget {
-  const StartOverlay({super.key, required this.game});
+  const StartOverlay({super.key, required this.game, this.duel});
 
   final StackDuelGame game;
+  final DuelChallenge? duel;
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +139,50 @@ class StartOverlay extends StatelessWidget {
             'Best  ${game.scoreState.best}      ◆ ${game.coinState.total}',
             style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: 28),
+          // Incoming duel: prominent Accept banner.
+          if (duel != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 18),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A1E12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF1C40F), width: 2),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '⚔️ ${duelDisplayName(duel!.name)} challenged you!',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Beat their score of ${duel!.score} on the same run',
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => game.playDuel(duel!),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF1C40F),
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(200, 48),
+                    ),
+                    child: const Text('Accept Duel',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+          ],
           ElevatedButton(
             onPressed: game.playEndless,
             style: ElevatedButton.styleFrom(
@@ -217,14 +274,30 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              game.isDaily ? 'Daily Done' : 'Game Over',
+              game.isDuel
+                  ? 'Duel Done'
+                  : (game.isDaily ? 'Daily Done' : 'Game Over'),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (game.isDaily) ...[
+            if (game.isDuel) ...[
+              const SizedBox(height: 8),
+              Text(
+                game.duelResult(),
+                style: TextStyle(
+                  color: game.scoreState.current > game.activeOpponent!.score
+                      ? const Color(0xFF2ECC71)
+                      : (game.scoreState.current == game.activeOpponent!.score
+                          ? Colors.white
+                          : const Color(0xFFE74C3C)),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ] else if (game.isDaily) ...[
               const SizedBox(height: 6),
               Text(
                 'Daily ${game.activeDaily!.label}  ·  ${game.activeDaily!.modifier}',
@@ -263,7 +336,7 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (game.isDaily)
+                if (game.isDaily || game.isDuel)
                   OutlinedButton.icon(
                     onPressed: _shareDaily,
                     style: OutlinedButton.styleFrom(
@@ -273,7 +346,8 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
                           horizontal: 18, vertical: 12),
                     ),
                     icon: const Icon(Icons.share, size: 18),
-                    label: const Text('Share', style: TextStyle(fontSize: 16)),
+                    label: Text(game.isDuel ? 'Challenge back' : 'Share',
+                        style: const TextStyle(fontSize: 16)),
                   )
                 else
                   OutlinedButton(
@@ -296,7 +370,7 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 28, vertical: 12),
                   ),
-                  child: Text(game.isDaily ? 'Retry' : 'Restart',
+                  child: Text(game.isDaily || game.isDuel ? 'Retry' : 'Restart',
                       style: const TextStyle(fontSize: 18)),
                 ),
               ],

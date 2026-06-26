@@ -11,6 +11,7 @@ import '../state/characters.dart';
 import '../state/city_state.dart';
 import '../state/coin_state.dart';
 import '../state/daily_seed.dart';
+import '../state/duel.dart';
 import '../state/score_state.dart';
 import '../state/skin_state.dart';
 import 'ads.dart';
@@ -96,6 +97,15 @@ class StackDuelGame extends FlameGame {
   /// True while playing today's Daily Challenge (drives the share card).
   bool get isDaily => activeDaily != null;
 
+  /// The opponent when playing an incoming duel link, else null.
+  DuelChallenge? activeOpponent;
+
+  /// True while playing an async duel (vs a friend's seed + score).
+  bool get isDuel => activeOpponent != null;
+
+  /// Public base URL of the hosted game (used to build share/duel links).
+  static const String siteUrl = 'https://ganbaroff.github.io/LifeSimulator/';
+
   /// Base-width fraction + perfect window, overridden by the daily config.
   double get _baseWidthFactor => activeDaily?.baseWidthFactor ?? 0.45;
   double get _epsilon => activeDaily?.perfectEpsilon ?? _perfectEpsilon;
@@ -138,6 +148,7 @@ class StackDuelGame extends FlameGame {
   late TextComponent _scoreText;
   late TextComponent _comboText;
   late TextComponent _coinText;
+  late TextComponent _vsText;
   final TextPaint _hudPaint = TextPaint(
     style: const TextStyle(
       color: Colors.white,
@@ -228,6 +239,15 @@ class StackDuelGame extends FlameGame {
     );
     camera.viewport.add(_coinText);
 
+    // Duel target (shown only while playing an incoming challenge).
+    _vsText = TextComponent(
+      text: '',
+      textRenderer: _comboPaint,
+      position: Vector2(16, 120),
+      anchor: Anchor.topLeft,
+    );
+    camera.viewport.add(_vsText);
+
     // Full-screen tap catcher (component-based TapCallbacks). Lives in the
     // viewport so it covers the screen regardless of camera scroll.
     camera.viewport.add(_TapLayer(this));
@@ -280,6 +300,7 @@ class StackDuelGame extends FlameGame {
   /// Start a normal endless run (from the title screen).
   void playEndless() {
     activeDaily = null;
+    activeOpponent = null;
     overlays.remove('start');
     _startNewRun();
     resumeEngine();
@@ -291,10 +312,31 @@ class StackDuelGame extends FlameGame {
     final now = DateTime.now();
     activeDaily =
         DailyConfig.fromSeed(dailySeedForDate(now.year, now.month, now.day));
+    activeOpponent = null;
     overlays.remove('start');
     _startNewRun();
     resumeEngine();
     analytics.event('daily_start', {'seed': activeDaily!.seed});
+  }
+
+  /// Accept an incoming duel: play the challenger's exact seed, racing to beat
+  /// their score. Reuses the deterministic daily engine for fairness.
+  void playDuel(DuelChallenge opponent) {
+    activeDaily = DailyConfig.fromSeed(opponent.seed);
+    activeOpponent = opponent;
+    overlays.remove('start');
+    _startNewRun();
+    resumeEngine();
+    analytics.event('duel_start', {'seed': opponent.seed});
+  }
+
+  /// A `?duel=` link that challenges a friend to beat THIS run on the same seed.
+  /// Every shared result is therefore a challenge (the viral loop).
+  String duelLink() {
+    final d = activeDaily;
+    if (d == null) return siteUrl;
+    final token = encodeDuel(d.seed, '', scoreState.current);
+    return '$siteUrl?duel=$token';
   }
 
   /// Return to the title screen.
@@ -303,17 +345,30 @@ class StackDuelGame extends FlameGame {
     overlays.add('start');
   }
 
-  /// Shareable result card for a finished Daily run (copy -> paste into a chat).
-  /// The viral atom: same seed, comparable scores, an emoji grid like Wordle.
+  /// Shareable result card for a finished Daily/Duel run (copy -> paste into a
+  /// chat). The viral atom: same seed, comparable scores, an emoji grid like
+  /// Wordle — and the link is a duel challenge, so every share recruits a player.
   String dailyShareCard() {
     final d = activeDaily;
     if (d == null) return '';
     final bar = perfectBar(_perfectsThisRun, _tower.length);
-    return '🏙 Stack Daily ${d.label}  ·  ${d.modifier}\n'
-        'Height ${_tower.length}  ·  Score ${scoreState.current}\n'
+    final header = isDuel
+        ? '⚔️ Stack Duel ${d.label}  ·  ${d.modifier}'
+        : '🏙 Stack Daily ${d.label}  ·  ${d.modifier}';
+    final result = isDuel
+        ? '${duelResultLine(activeOpponent!.name, scoreState.current, activeOpponent!.score)}\n'
+        : '';
+    return '$header\n'
+        '${result}Height ${_tower.length}  ·  Score ${scoreState.current}\n'
         '$bar\n'
-        'https://ganbaroff.github.io/LifeSimulator/';
+        'Beat me 👉 ${duelLink()}';
   }
+
+  /// One-line duel verdict for the result overlay (empty if not a duel).
+  String duelResult() => isDuel
+      ? duelResultLine(
+          activeOpponent!.name, scoreState.current, activeOpponent!.score)
+      : '';
 
   // ---------------------------------------------------------------------------
   // Spawning
@@ -603,6 +658,9 @@ class StackDuelGame extends FlameGame {
         'Score: ${scoreState.current}    Best: ${scoreState.best}';
     _comboText.text = _combo > 0 ? 'Combo ×${comboMultiplier(_combo)}' : '';
     _coinText.text = 'Coins: ${coinState.total}';
+    _vsText.text = isDuel
+        ? 'vs ${duelDisplayName(activeOpponent!.name)}: ${activeOpponent!.score}'
+        : '';
 
     // Background hue drifts as the tower climbs — a sense of journey.
     final hue = (212 + scoreState.current * 4) % 360.0;

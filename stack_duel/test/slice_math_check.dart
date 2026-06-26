@@ -11,6 +11,7 @@ import '../lib/game/slice_math.dart';
 import '../lib/state/characters.dart';
 import '../lib/state/city_math.dart';
 import '../lib/state/daily_seed.dart';
+import '../lib/state/duel.dart';
 
 int _pass = 0;
 int _fail = 0;
@@ -169,6 +170,27 @@ void main() {
   check('bar: all perfect -> 5 green', perfectBar(10, 11) == '🟩🟩🟩🟩🟩');
   check('bar: none -> 5 white', perfectBar(0, 11) == '⬜⬜⬜⬜⬜');
   check('bar: trivial run -> empty bar', perfectBar(0, 1) == '⬜⬜⬜⬜⬜');
+
+  // 16) Async Duel: challenge link round-trips and outcomes are correct.
+  {
+    final token = encodeDuel(20260627, 'Alex', 219);
+    final d = decodeDuel(token);
+    check('duel: round-trips seed', d != null && d.seed == 20260627);
+    check('duel: round-trips name', d != null && d.name == 'Alex');
+    check('duel: round-trips score', d != null && d.score == 219);
+  }
+  check('duel: bad token -> null', decodeDuel('not-base64!!') == null);
+  {
+    // Anonymous + pipe-sanitised name still decodes.
+    final d = decodeDuel(encodeDuel(1, 'a|b', 5));
+    check('duel: name pipe sanitised', d != null && !d.name.contains('|'));
+    check('duel: empty name -> "a friend"', duelDisplayName('') == 'a friend');
+  }
+  check('duel: outcome win', duelOutcome(10, 5) == 1);
+  check('duel: outcome tie', duelOutcome(5, 5) == 0);
+  check('duel: outcome loss', duelOutcome(3, 5) == -1);
+  check('duel: result line win',
+      duelResultLine('Alex', 10, 5) == 'You beat Alex   10 : 5');
 
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {
