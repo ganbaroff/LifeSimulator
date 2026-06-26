@@ -75,3 +75,47 @@ String cityLevelName(int totalHeight) {
   }
   return name;
 }
+
+/// A visual era the whole city takes on as it grows — the "civilization"
+/// progression (VISION.md, P2). Colours are ARGB ints so this file stays
+/// Flutter-free and unit-testable; the overlay wraps them in `Color`.
+class CityEra {
+  const CityEra(
+    this.minHeight,
+    this.name,
+    this.skyTop,
+    this.skyBottom,
+    this.ground,
+  );
+
+  /// Minimum cumulative built height to reach this era.
+  final int minHeight;
+  final String name;
+
+  /// Sky gradient (top -> bottom) and the ground line colour, as ARGB ints.
+  final int skyTop;
+  final int skyBottom;
+  final int ground;
+}
+
+/// Era ladder by cumulative built height, ascending — rural village to a neon
+/// metropolis. The highest threshold a height clears wins.
+const List<CityEra> kCityEras = [
+  CityEra(0, 'Rural', 0xFF3A2E26, 0xFF161009, 0xFF4A3B2A),
+  CityEra(30, 'Classic', 0xFF243B55, 0xFF0A0E15, 0xFF394B5E),
+  CityEra(70, 'Modern', 0xFF2C2150, 0xFF0A0814, 0xFF40346B),
+  CityEra(150, 'Neon', 0xFF0B132B, 0xFF000000, 0xFF1C2541),
+];
+
+/// Visual era for a cumulative built [totalHeight].
+CityEra cityEra(int totalHeight) {
+  var era = kCityEras.first;
+  for (final e in kCityEras) {
+    if (totalHeight >= e.minHeight) {
+      era = e;
+    } else {
+      break;
+    }
+  }
+  return era;
+}

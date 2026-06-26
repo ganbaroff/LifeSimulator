@@ -99,6 +99,16 @@ void main() {
     expect(cityLevelName(10000), 'Metropolis');
   });
 
+  test('city: era advances with cumulative height (P2)', () {
+    expect(cityEra(0).name, 'Rural');
+    expect(cityEra(29).name, 'Rural');
+    expect(cityEra(30).name, 'Classic');
+    expect(cityEra(69).name, 'Classic');
+    expect(cityEra(70).name, 'Modern');
+    expect(cityEra(150).name, 'Neon');
+    expect(cityEra(99999).name, 'Neon');
+  });
+
   test('city: starts empty', () async {
     final city = CityState();
     await city.load();

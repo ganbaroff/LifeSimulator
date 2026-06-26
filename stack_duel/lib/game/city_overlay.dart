@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../state/city_math.dart';
 import 'stack_duel_game.dart';
 
-/// The City screen (Stack City meta, P1): a skyline built from every run you've
-/// completed. Each run is one building; taller/higher-quality runs make bigger,
-/// better buildings, and the whole city levels up as it grows. Layered on top of
-/// the start / game-over overlays; closing returns to whatever was behind it.
+/// The City screen (Stack City meta). P1 added a building per run; P2 makes the
+/// city visibly EVOLVE: buildings grow windows/spires by quality tier, and the
+/// whole city takes on an era theme (Rural -> Classic -> Modern -> Neon) as it
+/// grows — the "civilization" progression (VISION.md). Flat-shape art only, no
+/// assets, matching the game's aesthetic. Layered on top of the start /
+/// game-over overlays; closing returns to whatever was behind it.
 class CityOverlay extends StatelessWidget {
   const CityOverlay({super.key, required this.game});
 
@@ -25,13 +27,14 @@ class CityOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final city = game.cityState;
     final buildings = city.buildings;
+    final era = cityEra(city.totalHeight);
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF243B55), Color(0xFF0A0E15)],
+          colors: [Color(era.skyTop), Color(era.skyBottom)],
         ),
       ),
       child: SafeArea(
@@ -63,13 +66,19 @@ class CityOverlay extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                '${city.cityLevel}   ·   ${city.totalBuildings} buildings'
-                '   ·   height ${city.totalHeight}',
+                '${city.cityLevel}   ·   ${era.name} era',
                 style: const TextStyle(
                   color: Color(0xFF3498DB),
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
+              child: Text(
+                '${city.totalBuildings} buildings   ·   height ${city.totalHeight}',
+                style: const TextStyle(color: Colors.white54, fontSize: 13),
               ),
             ),
             Expanded(
@@ -80,7 +89,11 @@ class CityOverlay extends StatelessWidget {
                         style: TextStyle(color: Colors.white54, fontSize: 16),
                       ),
                     )
-                  : _Skyline(buildings: buildings, tierColors: _tierColors),
+                  : _Skyline(
+                      buildings: buildings,
+                      tierColors: _tierColors,
+                      groundColor: Color(era.ground),
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -101,30 +114,39 @@ class CityOverlay extends StatelessWidget {
   }
 }
 
-/// Horizontally scrollable row of buildings, sitting on a ground line. Building
-/// pixel-height scales with its block height; colour encodes its quality tier.
+/// Horizontally scrollable row of buildings, sitting on a ground line. Newest
+/// building is highlighted; pixel-height scales with block height; colour +
+/// detail encode the quality tier.
 class _Skyline extends StatelessWidget {
-  const _Skyline({required this.buildings, required this.tierColors});
+  const _Skyline({
+    required this.buildings,
+    required this.tierColors,
+    required this.groundColor,
+  });
 
   final List<Building> buildings;
   final List<Color> tierColors;
+  final Color groundColor;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      reverse: true, // keep the newest building in view
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Color(0xFF394B5E), width: 2),
-          ),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: groundColor, width: 3)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            for (final b in buildings)
-              _BuildingBar(building: b, color: tierColors[b.tier.clamp(0, 4)]),
+            for (var i = 0; i < buildings.length; i++)
+              _BuildingBar(
+                building: buildings[i],
+                color: tierColors[buildings[i].tier.clamp(0, 4)],
+                isNewest: i == buildings.length - 1,
+              ),
           ],
         ),
       ),
@@ -132,32 +154,91 @@ class _Skyline extends StatelessWidget {
   }
 }
 
+/// One building: a flat tower whose height is its block count, with lit windows
+/// and — at the top tier — a spire. Higher tiers light up gold. The newest gets
+/// a subtle outline so a fresh run is easy to spot.
 class _BuildingBar extends StatelessWidget {
-  const _BuildingBar({required this.building, required this.color});
+  const _BuildingBar({
+    required this.building,
+    required this.color,
+    required this.isNewest,
+  });
 
   final Building building;
   final Color color;
+  final bool isNewest;
 
   @override
   Widget build(BuildContext context) {
     // 1 block ~= 9 px tall, clamped so tiny and huge towers both stay on screen.
     final h = (building.height * 9.0).clamp(16.0, 340.0);
+    final tier = building.tier.clamp(0, 4);
+    final windowRows = (h / 18).floor().clamp(0, 16);
+    final windowColor =
+        tier >= 3 ? const Color(0xCCF1C40F) : Colors.white30;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Spire on the top tier (Skyscraper) — the "evolved" silhouette.
+          if (tier >= 4)
+            Container(width: 3, height: 14, color: Colors.white70),
           Container(
             width: 26,
             height: h,
+            // borderRadius requires a UNIFORM border in Flutter, so the roof is
+            // drawn as an inner strip and the "newest" highlight as a glow —
+            // never as a per-side border (which throws at paint time).
             decoration: BoxDecoration(
               color: color,
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(3)),
-              // A lighter cap for a roof-light feel.
-              border: const Border(
-                top: BorderSide(color: Colors.white24, width: 3),
-              ),
+              boxShadow: isNewest
+                  ? const [
+                      BoxShadow(
+                        color: Colors.white70,
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                // Roof cap.
+                Container(
+                  height: 3,
+                  width: double.infinity,
+                  color: isNewest ? Colors.white : Colors.white24,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+                    child: Column(
+                      children: [
+                        for (var r = 0; r < windowRows; r++)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                    width: 5, height: 5, color: windowColor),
+                                Container(
+                                    width: 5, height: 5, color: windowColor),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 3),

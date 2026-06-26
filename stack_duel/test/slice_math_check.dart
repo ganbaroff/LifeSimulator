@@ -111,6 +111,14 @@ void main() {
   check('city: height 70 -> City', cityLevelName(70) == 'City');
   check('city: height 150 -> Metropolis', cityLevelName(150) == 'Metropolis');
 
+  // 12) City era (P2): the city's visual theme advances as it grows.
+  check('era: height 0 -> Rural', cityEra(0).name == 'Rural');
+  check('era: height 29 -> Rural', cityEra(29).name == 'Rural');
+  check('era: height 30 -> Classic', cityEra(30).name == 'Classic');
+  check('era: height 70 -> Modern', cityEra(70).name == 'Modern');
+  check('era: height 149 -> Modern', cityEra(149).name == 'Modern');
+  check('era: height 150 -> Neon', cityEra(150).name == 'Neon');
+
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {
     throw StateError('slice math verification failed');
