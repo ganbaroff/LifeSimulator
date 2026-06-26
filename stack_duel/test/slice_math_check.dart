@@ -8,6 +8,7 @@
 // Exits non-zero if any case fails.
 
 import '../lib/game/slice_math.dart';
+import '../lib/state/city_math.dart';
 
 int _pass = 0;
 int _fail = 0;
@@ -94,6 +95,21 @@ void main() {
   check('restore: grows by step', near(restoredWidth(50, 100, 14), 64));
   check('restore: caps at base', near(restoredWidth(95, 100, 14), 100));
   check('restore: at base stays base', near(restoredWidth(100, 100, 14), 100));
+
+  // 10) City meta (P1): building tier bumps every 3 perfects, capped.
+  check('city: 0 perfects -> tier 0', buildingTier(0) == 0);
+  check('city: 2 perfects -> tier 0', buildingTier(2) == 0);
+  check('city: 3 perfects -> tier 1', buildingTier(3) == 1);
+  check('city: 6 perfects -> tier 2', buildingTier(6) == 2);
+  check('city: tier caps at 4', buildingTier(12) == 4 && buildingTier(999) == 4);
+
+  // 11) City level name clears the highest threshold it can.
+  check('city: height 0 -> Hamlet', cityLevelName(0) == 'Hamlet');
+  check('city: height 9 -> Hamlet', cityLevelName(9) == 'Hamlet');
+  check('city: height 10 -> Village', cityLevelName(10) == 'Village');
+  check('city: height 30 -> Town', cityLevelName(30) == 'Town');
+  check('city: height 70 -> City', cityLevelName(70) == 'City');
+  check('city: height 150 -> Metropolis', cityLevelName(150) == 'Metropolis');
 
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {

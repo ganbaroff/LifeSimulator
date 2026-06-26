@@ -7,6 +7,7 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
+import '../state/city_state.dart';
 import '../state/coin_state.dart';
 import '../state/score_state.dart';
 import '../state/skin_state.dart';
@@ -30,6 +31,7 @@ class StackDuelGame extends FlameGame {
     required this.scoreState,
     required this.coinState,
     required this.skinState,
+    required this.cityState,
     this.haptics = const DeviceHaptics(),
     this.analytics = const NoopAnalytics(),
     this.sound = const GameSound(),
@@ -43,6 +45,9 @@ class StackDuelGame extends FlameGame {
 
   /// Owned/selected cosmetic skins (palette source).
   final SkinState skinState;
+
+  /// Persistent city meta — each completed run adds a building (VISION.md, P1).
+  final CityState cityState;
 
   /// Tactile feedback seam (injected so tests can use a fake).
   final Haptics haptics;
@@ -462,6 +467,16 @@ class StackDuelGame extends FlameGame {
       ads.showInterstitial();
       analytics.event('ad_interstitial', {'count': _gameOvers});
     }
+
+    // City meta: this run becomes a building in the persistent city. Tower
+    // height + perfects decide its size + quality tier (VISION.md, P1).
+    final building =
+        await cityState.addBuilding(_tower.length, _perfectsThisRun);
+    analytics.event('building_added', {
+      'height': building.height,
+      'tier': building.tier,
+      'city_level': cityState.cityLevel,
+    });
 
     await scoreState.maybeUpdateBest();
     _updateHud();

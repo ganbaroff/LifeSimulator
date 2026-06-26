@@ -5,6 +5,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:stack_duel/state/city_math.dart';
+import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
 
@@ -73,5 +75,69 @@ void main() {
     await reloaded.load();
     expect(reloaded.isOwned(1), isTrue);
     expect(reloaded.selected, 1);
+  });
+
+  // --- City meta (P1) -------------------------------------------------------
+
+  test('city: buildingTier bumps every 3 perfects, capped at top tier', () {
+    expect(buildingTier(0), 0);
+    expect(buildingTier(2), 0);
+    expect(buildingTier(3), 1);
+    expect(buildingTier(6), 2);
+    expect(buildingTier(12), 4);
+    expect(buildingTier(999), 4, reason: 'tier saturates at Skyscraper');
+  });
+
+  test('city: cityLevelName clears the highest threshold it can', () {
+    expect(cityLevelName(0), 'Hamlet');
+    expect(cityLevelName(9), 'Hamlet');
+    expect(cityLevelName(10), 'Village');
+    expect(cityLevelName(29), 'Village');
+    expect(cityLevelName(30), 'Town');
+    expect(cityLevelName(70), 'City');
+    expect(cityLevelName(150), 'Metropolis');
+    expect(cityLevelName(10000), 'Metropolis');
+  });
+
+  test('city: starts empty', () async {
+    final city = CityState();
+    await city.load();
+    expect(city.totalBuildings, 0);
+    expect(city.totalHeight, 0);
+    expect(city.cityLevel, 'Hamlet');
+  });
+
+  test('city: addBuilding records height + tier and updates the level', () async {
+    final city = CityState();
+    await city.load();
+
+    final b1 = await city.addBuilding(8, 0); // tier 0
+    expect(b1.height, 8);
+    expect(b1.tier, 0);
+    expect(city.totalBuildings, 1);
+    expect(city.totalHeight, 8);
+    expect(city.cityLevel, 'Hamlet');
+
+    final b2 = await city.addBuilding(25, 6); // tier 2; total height 33
+    expect(b2.tier, 2);
+    expect(city.totalBuildings, 2);
+    expect(city.totalHeight, 33);
+    expect(city.cityLevel, 'Town', reason: '33 >= 30');
+  });
+
+  test('city: buildings persist across reloads', () async {
+    final city = CityState();
+    await city.load();
+    await city.addBuilding(12, 3);
+    await city.addBuilding(20, 0);
+
+    final reloaded = CityState();
+    await reloaded.load();
+    expect(reloaded.totalBuildings, 2);
+    expect(reloaded.totalHeight, 32);
+    expect(reloaded.buildings.first.height, 12);
+    expect(reloaded.buildings.first.tier, 1);
+    expect(reloaded.buildings.last.height, 20);
+    expect(reloaded.cityLevel, 'Town');
   });
 }

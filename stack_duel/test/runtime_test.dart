@@ -29,6 +29,7 @@ import 'package:stack_duel/game/haptics.dart';
 import 'package:stack_duel/game/sound.dart';
 import 'package:stack_duel/game/stack_block.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
+import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/score_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
@@ -106,6 +107,7 @@ void main() {
   late ScoreState scoreState;
   late CoinState coinState;
   late SkinState skinState;
+  late CityState cityState;
   late FakeHaptics haptics;
   late FakeSound sound;
   late FakeAds ads;
@@ -118,6 +120,8 @@ void main() {
     await coinState.load();
     skinState = SkinState();
     await skinState.load();
+    cityState = CityState();
+    await cityState.load();
     haptics = FakeHaptics();
     sound = FakeSound();
     ads = FakeAds();
@@ -127,6 +131,7 @@ void main() {
         scoreState: scoreState,
         coinState: coinState,
         skinState: skinState,
+        cityState: cityState,
         haptics: haptics,
         sound: sound,
         ads: ads,
@@ -418,5 +423,35 @@ void main() {
 
     expect(haptics.gameOverCount, 1, reason: 'one heavy buzz on death');
     expect(haptics.successCount, 0, reason: 'a miss is not a success');
+  });
+
+  testWithGame<StackDuelGame>(
+      'city: a completed run adds one building sized by tower + perfects', create,
+      (game) async {
+    await game.ready();
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+    expect(cityState.totalBuildings, 0, reason: 'no buildings before any run');
+
+    // Two perfect drops -> tower of base + 2 = height 3; perfects = 2.
+    _moving(game).position.x = _top(game).position.x;
+    game.dropBlock();
+    await game.ready();
+    _moving(game).position.x = _top(game).position.x;
+    game.dropBlock();
+    await game.ready();
+    expect(cityState.totalBuildings, 0,
+        reason: 'building is banked on game over, not mid-run');
+
+    // Miss -> run ends, building is recorded.
+    _moving(game).position.x = _top(game).right + 60;
+    game.dropBlock();
+    await game.ready();
+
+    expect(cityState.totalBuildings, 1, reason: 'one run -> one building');
+    final b = cityState.buildings.single;
+    expect(b.height, 3, reason: 'base + 2 placed blocks');
+    expect(b.tier, 0, reason: '2 perfects is still tier 0 (3 perfects = tier 1)');
+    expect(cityState.totalHeight, 3);
+    expect(cityState.cityLevel, 'Hamlet', reason: 'height 3 is a Hamlet');
   });
 }

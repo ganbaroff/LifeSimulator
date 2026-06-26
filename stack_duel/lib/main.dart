@@ -1,7 +1,9 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+import 'game/city_overlay.dart';
 import 'game/stack_duel_game.dart';
+import 'state/city_state.dart';
 import 'state/coin_state.dart';
 import 'state/score_state.dart';
 import 'state/skin_state.dart';
@@ -16,11 +18,14 @@ Future<void> main() async {
   await coinState.load();
   final skinState = SkinState();
   await skinState.load();
+  final cityState = CityState();
+  await cityState.load();
 
   runApp(StackDuelApp(
     scoreState: scoreState,
     coinState: coinState,
     skinState: skinState,
+    cityState: cityState,
   ));
 }
 
@@ -30,11 +35,13 @@ class StackDuelApp extends StatelessWidget {
     required this.scoreState,
     required this.coinState,
     required this.skinState,
+    required this.cityState,
   });
 
   final ScoreState scoreState;
   final CoinState coinState;
   final SkinState skinState;
+  final CityState cityState;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +49,7 @@ class StackDuelApp extends StatelessWidget {
       scoreState: scoreState,
       coinState: coinState,
       skinState: skinState,
+      cityState: cityState,
     );
 
     return MaterialApp(
@@ -54,6 +62,7 @@ class StackDuelApp extends StatelessWidget {
           overlayBuilderMap: {
             'start': (context, game) => StartOverlay(game: game),
             'gameOver': (context, game) => GameOverOverlay(game: game),
+            'city': (context, game) => CityOverlay(game: game),
           },
         ),
       ),
@@ -122,6 +131,22 @@ class StartOverlay extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            if (game.cityState.totalBuildings > 0) ...[
+              const SizedBox(height: 26),
+              // Inner GestureDetector absorbs the tap so it opens the city
+              // instead of falling through to "tap to play".
+              GestureDetector(
+                onTap: () => game.overlays.add('city'),
+                child: Text(
+                  'View City  ·  ${game.cityState.cityLevel}',
+                  style: const TextStyle(
+                    color: Color(0xFF3498DB),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -203,15 +228,32 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
               ],
             ),
             const SizedBox(height: 22),
-            ElevatedButton(
-              onPressed: game.restart,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2ECC71),
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              ),
-              child: const Text('Restart', style: TextStyle(fontSize: 18)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton(
+                  onPressed: () => game.overlays.add('city'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFF3498DB)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                  ),
+                  child: Text('View City  (${game.cityState.totalBuildings})',
+                      style: const TextStyle(fontSize: 16)),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: game.restart,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2ECC71),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 12),
+                  ),
+                  child: const Text('Restart', style: TextStyle(fontSize: 18)),
+                ),
+              ],
             ),
           ],
         ),
