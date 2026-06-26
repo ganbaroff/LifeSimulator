@@ -54,10 +54,13 @@
 
   <script>
     try { var t = window.Telegram && window.Telegram.WebApp; if (t) { t.ready(); t.expand(); } } catch (e) {}
-    window.addEventListener('flutter-first-frame', function () {
+    function hideLoading() {
       var l = document.getElementById('loading');
       if (l) { l.style.opacity = '0'; setTimeout(function () { l.remove(); }, 350); }
-    });
+    }
+    window.addEventListener('flutter-first-frame', hideLoading);
+    // Fallback: never let the splash stay stuck over the game.
+    setTimeout(hideLoading, 8000);
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
