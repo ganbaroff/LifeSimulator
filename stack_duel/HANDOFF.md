@@ -488,6 +488,22 @@ phone-only pipeline).
   overlay (buy with coins / select). Tests: slice 24/24, runtime+economy **21/21**
   (coins add/spend, skin buy needs+deducts coins, select/persist, blocks use skin).
 
+- **Build #9 — own the android/ project** (publish + ads foundation): committed
+  android/ (app label, package id, VIBRATE, minSdk 23, AdMob TEST app-id
+  meta-data), CI builds from it (no more `flutter create`). CI-green, 15.6 MB.
+- **Build #10 (current) — premium visual pass (the (a) pivot).** Owner: game looked
+  flat; directive to make it look/feel premium. Added a screen-space gradient
+  backdrop that drifts hue with height (sense of journey), escalating perfect
+  feedback (PERFECT ×N text grows + denser particle burst with combo), and a red
+  game-over screen flash. All in code, no assets/deps. Tests 21/21 + slice 24/24,
+  analyze clean. Build -> +12.
+
+> STRATEGIC NOTE (surfaced to owner): we are building on ONE subjective "fun"
+> datapoint and ZERO retention data; commercial odds are <5%; everything funnels
+> to owner-only publish actions (AdMob/Play/signing/privacy). Direction reset to
+> (a): invest in visible look/feel (no owner deps), pause the ad SDK until there's
+> a reason to publish. See the plan file for the full self-critique.
+
 Day-3 remaining (needs owner inputs / follow-up builds): real `google_mobile_ads`
 impl swapped into the `Ads` seam (AdMob app/ad-unit ids, manifest App ID via a CI
 step, TEST ids first); rewarded (continue + double coins) + its UI button;

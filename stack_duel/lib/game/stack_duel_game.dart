@@ -114,6 +114,9 @@ class StackDuelGame extends FlameGame {
   /// Original base-block width; the cap for the perfect width-restore.
   late double _baseWidth;
 
+  /// Screen-space gradient backdrop (its colours drift with height).
+  late _Background _bg;
+
   late TextComponent _scoreText;
   late TextComponent _comboText;
   late TextComponent _coinText;
@@ -158,6 +161,9 @@ class StackDuelGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await sound.preload();
+
+    _bg = _Background()..size = size;
+    camera.viewport.add(_bg);
 
     _scoreText = TextComponent(
       text: '',
@@ -369,11 +375,13 @@ class StackDuelGame extends FlameGame {
 
   /// Brief, asset-free "PERFECT" flash near the top-centre of the screen.
   void _showPerfectFlash() {
+    final grow = 1 + (_combo.clamp(1, 6) - 1) * 0.12; // bigger as the streak grows
     final flash = TextComponent(
-      text: 'PERFECT',
+      text: _combo >= 2 ? 'PERFECT ×$_combo' : 'PERFECT',
       textRenderer: _perfectPaint,
       position: Vector2(size.x / 2, size.y * 0.28),
       anchor: Anchor.center,
+      scale: Vector2.all(grow),
     )..add(RemoveEffect(delay: 0.55));
     camera.viewport.add(flash);
   }
@@ -384,7 +392,7 @@ class StackDuelGame extends FlameGame {
     world.add(ParticleSystemComponent(
       position: Vector2(cx, cy),
       particle: Particle.generate(
-        count: 14,
+        count: 10 + _combo.clamp(0, 8) * 3, // denser burst on bigger combos
         lifespan: 0.5,
         generator: (i) {
           final dir = rnd.nextDouble() * math.pi * 2;
@@ -428,6 +436,7 @@ class StackDuelGame extends FlameGame {
     _combo = 0;
     haptics.gameOver();
     sound.gameOver();
+    _screenFlash(const Color(0x55E74C3C), 0.4); // red game-over flash
     analytics.event('game_over', {
       'score': scoreState.current,
       'blocks': _tower.length,
@@ -491,6 +500,11 @@ class StackDuelGame extends FlameGame {
         'Score: ${scoreState.current}    Best: ${scoreState.best}';
     _comboText.text = _combo > 0 ? 'Combo ×${comboMultiplier(_combo)}' : '';
     _coinText.text = 'Coins: ${coinState.total}';
+
+    // Background hue drifts as the tower climbs — a sense of journey.
+    final hue = (212 + scoreState.current * 4) % 360.0;
+    _bg.top = HSVColor.fromAHSV(1, hue, 0.40, 0.24).toColor();
+    _bg.bottom = const Color(0xFF0A0E15);
   }
 
   @override
@@ -498,6 +512,18 @@ class StackDuelGame extends FlameGame {
     super.onGameResize(newSize);
     // Keep horizontal framing centered if the surface size changes.
     _centerX = newSize.x / 2;
+  }
+
+  /// Full-screen coloured flash (screen space) that fades out — game-over juice.
+  void _screenFlash(Color color, double duration) {
+    final flash = RectangleComponent(
+      size: size.clone(),
+      paint: Paint()..color = color,
+      priority: 100,
+    )
+      ..add(OpacityEffect.fadeOut(EffectController(duration: duration)))
+      ..add(RemoveEffect(delay: duration));
+    camera.viewport.add(flash);
   }
 }
 
@@ -521,5 +547,32 @@ class _TapLayer extends PositionComponent with TapCallbacks {
   @override
   void onTapDown(TapDownEvent event) {
     _game.dropBlock();
+  }
+}
+
+/// Screen-space vertical gradient backdrop. Colours are mutated by the game so
+/// the background drifts in hue as the tower climbs.
+class _Background extends PositionComponent {
+  _Background() : super(priority: -100);
+
+  Color top = const Color(0xFF1B2430);
+  Color bottom = const Color(0xFF0A0E15);
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [top, bottom],
+      ).createShader(rect);
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  void onGameResize(Vector2 newSize) {
+    super.onGameResize(newSize);
+    size = newSize;
   }
 }
