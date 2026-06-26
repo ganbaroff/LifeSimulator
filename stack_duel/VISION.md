@@ -127,10 +127,23 @@ current growth market with real monetization (ads + TON/Stars). NOT Play-first
    **IMPORTANT cache lesson:** the Flutter web service worker pinned old builds
    ("ничего не изменилось", frozen badge) — FIXED by building with
    `--pwa-strategy=none` + an index.html SW purge (57772a4). Deploys are fresh now.
-5. **Next = P4 (Continue economy)**: hard currency **crystals**; revive/continue
-   a run on game-over for crystals OR a rewarded ad; double-coins; wire a real ad
-   SDK (test ids first). The monetization hook — but per the gate, keep it light
-   and validate retention (P5 Telegram social) before heavy IAP. One feature →
-   web build → owner judges.
+5. **CREATIVE PIVOT (owner asked for bolder formats, approved ALL 4 — "всё из
+   того что предлагаешь").** Research-grounded (Telegram 2026: async-social beats
+   graphics, Wordle daily-seed virality, Stars > spammy ads, referral loops).
+   Build order (one feature → web test → judge):
+   a. **Daily Challenge — SHIPPED** (5cd438e, build 1.4.0+19): `daily_seed.dart`
+      (pure LCG): everyone gets the same deterministic run + modifier per day;
+      Play vs Daily title buttons; shareable 🟩⬜ result card (clipboard).
+   b. **NEXT → Async Stack Duel (ghosts)**: makes the NAME real. Challenge a
+      friend via a Telegram deep-link that encodes seed + challenger result
+      (client-only, no backend); play the same seed; race their ghost tower;
+      optional crystal wager. Reuses the daily-seed engine. THE viral hook.
+   c. **Living city**: events (storm/quake → rebuild), resident quests, set
+      bonuses. Pure client, deepens single-player meta.
+   d. **Stars shop + referral**: crystals economy + revive + cosmetics/era-themes;
+      referral via start_param. NOTE: real Telegram Stars payment needs a bot
+      backend (openInvoice) — build the economy/referral client-side now, wire
+      Stars when the bot exists. Validate retention before heavy IAP (the gate).
 6. Owner side, when ready (parallel, no rush): @BotFather `/newapp` → Web App URL
-   = the Pages link → get the `t.me` Mini App link.
+   = the Pages link → get the `t.me` Mini App link. (Needed for real Duel deep-
+   links + Stars; the web build already loads the Telegram SDK.)
