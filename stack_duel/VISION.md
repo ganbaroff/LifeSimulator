@@ -134,11 +134,14 @@ current growth market with real monetization (ads + TON/Stars). NOT Play-first
    a. **Daily Challenge — SHIPPED** (5cd438e, build 1.4.0+19): `daily_seed.dart`
       (pure LCG): everyone gets the same deterministic run + modifier per day;
       Play vs Daily title buttons; shareable 🟩⬜ result card (clipboard).
-   b. **NEXT → Async Stack Duel (ghosts)**: makes the NAME real. Challenge a
-      friend via a Telegram deep-link that encodes seed + challenger result
-      (client-only, no backend); play the same seed; race their ghost tower;
-      optional crystal wager. Reuses the daily-seed engine. THE viral hook.
-   c. **Living city**: events (storm/quake → rebuild), resident quests, set
+   b. **Async Stack Duel — SHIPPED** (0046e91, build 1.5.0+20): `duel.dart`
+      (pure): `?duel=token` (seed|name|score) challenge links. Title shows an
+      Accept-Duel banner; playDuel() plays the challenger's exact seed; HUD "vs"
+      target; Game Over win/loss verdict; the share card's link IS the rematch
+      challenge (every Daily share = a duel). Client-only — works via any link.
+      FUTURE polish (needs bot): real challenger names via Telegram WebApp user;
+      a true live "ghost tower" replay (would need per-drop data or a backend).
+   c. **NEXT → Living city**: events (storm/quake → rebuild), resident quests, set
       bonuses. Pure client, deepens single-player meta.
    d. **Stars shop + referral**: crystals economy + revive + cosmetics/era-themes;
       referral via start_param. NOTE: real Telegram Stars payment needs a bot
