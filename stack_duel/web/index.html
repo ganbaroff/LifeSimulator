@@ -54,6 +54,20 @@
 
   <script>
     try { var t = window.Telegram && window.Telegram.WebApp; if (t) { t.ready(); t.expand(); } } catch (e) {}
+
+    // Deploy-proof: Flutter's service worker serves the PREVIOUS build until the
+    // next load, so a fresh deploy can look "unchanged" (the on-screen BUILD
+    // badge lags). When a new worker takes control, reload once so the latest
+    // build shows immediately. Guarded so it can never loop.
+    if ('serviceWorker' in navigator) {
+      var _swReloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (_swReloaded) return;
+        _swReloaded = true;
+        window.location.reload();
+      });
+    }
+
     function hideLoading() {
       var l = document.getElementById('loading');
       if (l) { l.style.opacity = '0'; setTimeout(function () { l.remove(); }, 350); }
