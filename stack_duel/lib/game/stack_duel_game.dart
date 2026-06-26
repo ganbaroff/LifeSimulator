@@ -146,6 +146,11 @@ class StackDuelGame extends FlameGame {
     ),
   );
 
+  /// Dim build badge (deployment proof, kept unobtrusive).
+  final TextPaint _devPaint = TextPaint(
+    style: const TextStyle(color: Color(0x55FFFFFF), fontSize: 11),
+  );
+
   /// Transient "PERFECT" flash.
   final TextPaint _perfectPaint = TextPaint(
     style: const TextStyle(
@@ -173,18 +178,18 @@ class StackDuelGame extends FlameGame {
     );
     camera.viewport.add(_scoreText);
 
-    // Build badge so the player can confirm which build is actually installed.
+    // Build badge — kept (deployment proof) but dim and tucked bottom-left.
     camera.viewport.add(TextComponent(
       text: 'BUILD $kBuildTag',
-      textRenderer: _buildPaint,
-      position: Vector2(16, 52),
+      textRenderer: _devPaint,
+      position: Vector2(8, size.y - 18),
       anchor: Anchor.topLeft,
     ));
 
     _comboText = TextComponent(
       text: '',
       textRenderer: _comboPaint,
-      position: Vector2(16, 78),
+      position: Vector2(16, 56),
       anchor: Anchor.topLeft,
     );
     camera.viewport.add(_comboText);
@@ -192,7 +197,7 @@ class StackDuelGame extends FlameGame {
     _coinText = TextComponent(
       text: '',
       textRenderer: _buildPaint,
-      position: Vector2(16, 110),
+      position: Vector2(16, 88),
       anchor: Anchor.topLeft,
     );
     camera.viewport.add(_coinText);

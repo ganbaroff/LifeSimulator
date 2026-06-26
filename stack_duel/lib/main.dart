@@ -50,9 +50,79 @@ class StackDuelApp extends StatelessWidget {
       home: Scaffold(
         body: GameWidget<StackDuelGame>(
           game: game,
+          initialActiveOverlays: const ['start'],
           overlayBuilderMap: {
+            'start': (context, game) => StartOverlay(game: game),
             'gameOver': (context, game) => GameOverOverlay(game: game),
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// Title screen shown on launch. Tap anywhere to start playing.
+class StartOverlay extends StatelessWidget {
+  const StartOverlay({super.key, required this.game});
+
+  final StackDuelGame game;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => game.overlays.remove('start'),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF243B55), Color(0xFF0A0E15)],
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Three stacked bars echoing the game's tower (slightly offset).
+            Container(width: 120, height: 26, color: const Color(0xFFE74C3C)),
+            Container(
+              width: 150,
+              height: 26,
+              margin: const EdgeInsets.only(top: 3, left: 30),
+              color: const Color(0xFFE67E22),
+            ),
+            Container(
+              width: 132,
+              height: 26,
+              margin: const EdgeInsets.only(top: 3),
+              color: const Color(0xFFF1C40F),
+            ),
+            const SizedBox(height: 28),
+            const Text(
+              'STACK DUEL',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 40,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Best  ${game.scoreState.best}      ◆ ${game.coinState.total}',
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 40),
+            const Text(
+              'Tap to play',
+              style: TextStyle(
+                color: Color(0xFF2ECC71),
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );
