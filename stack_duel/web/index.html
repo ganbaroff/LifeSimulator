@@ -55,16 +55,29 @@
   <script>
     try { var t = window.Telegram && window.Telegram.WebApp; if (t) { t.ready(); t.expand(); } } catch (e) {}
 
-    // Deploy-proof: Flutter's service worker serves the PREVIOUS build until the
-    // next load, so a fresh deploy can look "unchanged" (the on-screen BUILD
-    // badge lags). When a new worker takes control, reload once so the latest
-    // build shows immediately. Guarded so it can never loop.
+    // Deploy-proof: the app is now built with --pwa-strategy=none (no service
+    // worker), so deploys are always fresh. But older builds DID register a
+    // service worker that pins a client to a stale build (the "ничего не
+    // изменилось" / frozen BUILD badge). Kill any leftover worker + its caches
+    // and reload ONCE so such clients jump to the latest build. No-op once no
+    // worker exists; sessionStorage-guarded so it can never loop.
     if ('serviceWorker' in navigator) {
-      var _swReloaded = false;
-      navigator.serviceWorker.addEventListener('controllerchange', function () {
-        if (_swReloaded) return;
-        _swReloaded = true;
-        window.location.reload();
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        if (!regs.length) return;
+        Promise.all(regs.map(function (r) { return r.unregister(); }))
+          .then(function () {
+            if (window.caches && caches.keys) {
+              return caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+              });
+            }
+          })
+          .then(function () {
+            if (!sessionStorage.getItem('sw_purged')) {
+              sessionStorage.setItem('sw_purged', '1');
+              window.location.reload();
+            }
+          });
       });
     }
 

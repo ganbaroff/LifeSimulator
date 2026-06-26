@@ -42,8 +42,12 @@ jobs:
         run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       # Project pages are served under /LifeSimulator/, so the base href must match.
+      # --pwa-strategy=none: do NOT generate/register a service worker. The SW
+      # cached old builds and made fresh deploys look unchanged (the recurring
+      # "ничего не изменилось" / stale BUILD badge). Without it every refresh is
+      # served fresh. Offline/PWA isn't needed for a web + Telegram-mini-app game.
       - name: Build web
-        run: flutter build web --release --base-href /LifeSimulator/ --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}-web
+        run: flutter build web --release --pwa-strategy=none --base-href /LifeSimulator/ --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}-web
 
       # GitHub Pages does not serve from subfolders with a Jekyll skip; add a
       # .nojekyll so paths starting with _ (Flutter assets) are served as-is.
