@@ -13,8 +13,10 @@ build/
 # android/ is now COMMITTED (we own the project). The repo-root .gitignore
 # ignores android/ globally (for the unrelated RN project), so re-include it here.
 !android/
+# web/ is now COMMITTED too (own index.html: branded loading screen, title,
+# Telegram SDK). Re-include over the repo-root .gitignore.
+!web/
 ios/
 linux/
 macos/
 windows/
-web/

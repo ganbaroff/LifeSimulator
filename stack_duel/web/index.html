@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Stack Duel — tap to stack, nail the centre for a perfect combo.">
+  <meta name="theme-color" content="#0A0E15">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Stack Duel">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Stack Duel</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Telegram Mini App SDK: open full-screen inside Telegram + expose WebApp. -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #0A0E15; overflow: hidden; }
+    #loading {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(#243B55, #0A0E15);
+      font-family: -apple-system, Roboto, Arial, sans-serif;
+      transition: opacity .35s ease;
+    }
+    #loading .bars { display: flex; flex-direction: column; align-items: center; }
+    #loading .bar { height: 18px; border-radius: 2px; margin: 2px 0; }
+    #loading .title {
+      color: #fff; font-size: 34px; font-weight: 800; letter-spacing: 2px; margin-top: 22px;
+    }
+    #loading .sub { color: #7f8c9b; font-size: 14px; margin-top: 14px; }
+    #loading .dot { animation: pulse 1s infinite ease-in-out; }
+    @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="bars">
+      <div class="bar" style="width:90px;background:#E74C3C"></div>
+      <div class="bar" style="width:120px;background:#E67E22;margin-left:22px"></div>
+      <div class="bar" style="width:104px;background:#F1C40F"></div>
+    </div>
+    <div class="title">STACK DUEL</div>
+    <div class="sub"><span class="dot">●</span> loading</div>
+  </div>
+
+  <script>
+    try { var t = window.Telegram && window.Telegram.WebApp; if (t) { t.ready(); t.expand(); } } catch (e) {}
+    window.addEventListener('flutter-first-frame', function () {
+      var l = document.getElementById('loading');
+      if (l) { l.style.opacity = '0'; setTimeout(function () { l.remove(); }, 350); }
+    });
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

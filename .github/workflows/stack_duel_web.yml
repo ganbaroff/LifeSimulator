@@ -32,19 +32,10 @@ jobs:
         with:
           channel: stable
 
-      # web/ scaffold is generated (not committed); generic, no customisation yet.
-      - name: Generate web scaffold
-        run: flutter create --platforms=web --org com.volaura --project-name stack_duel .
-
+      # web/ is committed (we own index.html: branded loading screen, title,
+      # Telegram Mini App SDK), so no scaffold generation / injection needed.
       - name: Install dependencies
         run: flutter pub get
-
-      # Make this a proper Telegram Mini App: load the Telegram Web App SDK and
-      # call ready()/expand() so it opens full-screen inside Telegram. Injected
-      # into the generated index.html before the build bundles it.
-      - name: Add Telegram Web App SDK
-        run: |
-          sed -i 's#</head>#  <script src="https://telegram.org/js/telegram-web-app.js"></script>\n  <script>try{var t=window.Telegram\&\&window.Telegram.WebApp;if(t){t.ready();t.expand();}}catch(e){}</script>\n</head>#' web/index.html
 
       - name: Short SHA
         id: vars
