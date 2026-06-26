@@ -6,8 +6,13 @@
 build/
 *.apk
 
-# Platform scaffolding (generated locally via `flutter create .`)
-android/
+# IDE / project metadata noise
+.idea/
+*.iml
+
+# android/ is now COMMITTED (we own the project). The repo-root .gitignore
+# ignores android/ globally (for the unrelated RN project), so re-include it here.
+!android/
 ios/
 linux/
 macos/

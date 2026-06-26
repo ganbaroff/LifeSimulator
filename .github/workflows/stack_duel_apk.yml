@@ -44,10 +44,10 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      # The android/ scaffold is intentionally gitignored, so generate it here.
-      # This only adds platform files; it never touches lib/ or pubspec.
-      - name: Generate Android scaffold
-        run: flutter create --platforms=android .
+      # android/ is now committed (we own the project: app id, label, VIBRATE,
+      # minSdk 23, AdMob meta-data). Just make the committed wrapper executable.
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
       # Short commit sha drives BOTH the on-screen build badge and the APK
       # filename, so the download URL is unique per commit (cache-proof) and the
