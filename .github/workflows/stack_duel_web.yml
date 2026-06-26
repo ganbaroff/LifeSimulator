@@ -1,8 +1,10 @@
 name: Stack Duel Web (GitHub Pages)
 
-# Builds the Flutter web version and publishes it to GitHub Pages, so the game
-# has a public HTTPS URL — playable in any browser and embeddable as a Telegram
-# Mini App, with no Play Store / signing / testing gate.
+# Builds the Flutter web version and pushes it to the gh-pages branch, so the
+# game has a public HTTPS URL — playable in any browser and embeddable as a
+# Telegram Mini App, with no Play Store / signing / testing gate.
+# One-time owner step: Settings -> Pages -> Source: "Deploy from a branch" ->
+# gh-pages / (root).
 on:
   push:
     branches:
@@ -13,20 +15,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  contents: write
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     defaults:
       run:
         working-directory: stack_duel
@@ -54,16 +47,15 @@ jobs:
       - name: Build web
         run: flutter build web --release --base-href /LifeSimulator/ --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}-web
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      # GitHub Pages does not serve from subfolders with a Jekyll skip; add a
+      # .nojekyll so paths starting with _ (Flutter assets) are served as-is.
+      - name: Disable Jekyll
+        run: touch build/web/.nojekyll
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Publish to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: stack_duel/build/web
-
-      - name: Deploy to Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: stack_duel/build/web
+          publish_branch: gh-pages
+          force_orphan: true
