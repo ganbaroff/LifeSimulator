@@ -167,8 +167,11 @@ class StackDuelGame extends FlameGame {
   Future<void> onLoad() async {
     await sound.preload();
 
+    // Add the gradient backdrop at GAME level behind the camera, not in the
+    // viewport — a viewport child renders ON TOP of the world and would hide the
+    // tower. Low priority keeps it behind the world + HUD.
     _bg = _Background()..size = size;
-    camera.viewport.add(_bg);
+    add(_bg);
 
     _scoreText = TextComponent(
       text: '',
@@ -558,7 +561,7 @@ class _TapLayer extends PositionComponent with TapCallbacks {
 /// Screen-space vertical gradient backdrop. Colours are mutated by the game so
 /// the background drifts in hue as the tower climbs.
 class _Background extends PositionComponent {
-  _Background() : super(priority: -100);
+  _Background() : super(priority: -1000);
 
   Color top = const Color(0xFF1B2430);
   Color bottom = const Color(0xFF0A0E15);
