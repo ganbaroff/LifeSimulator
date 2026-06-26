@@ -10,6 +10,7 @@
 import '../lib/game/slice_math.dart';
 import '../lib/state/characters.dart';
 import '../lib/state/city_math.dart';
+import '../lib/state/daily_seed.dart';
 
 int _pass = 0;
 int _fail = 0;
@@ -139,6 +140,35 @@ void main() {
     check('residents: collection dedupes by name (5 buildings -> 4 unique)',
         list.length == 4, 'got ${list.length}');
   }
+
+  // 14) Daily Challenge (Wordle effect): config is deterministic per seed,
+  // varied across seeds, and always in valid ranges.
+  check('daily: seed = YYYYMMDD', dailySeedForDate(2026, 6, 26) == 20260626);
+  {
+    final a = DailyConfig.fromSeed(20260626);
+    final b = DailyConfig.fromSeed(20260626);
+    check('daily: same seed -> same modifier', a.modifier == b.modifier);
+    check('daily: same seed -> same speed', near(a.startSpeed, b.startSpeed));
+    check('daily: modifier is valid',
+        DailyConfig.modifiers.contains(a.modifier));
+    check('daily: epsilon is 5 or 8',
+        a.perfectEpsilon == 5 || a.perfectEpsilon == 8);
+    check('daily: base width in range',
+        a.baseWidthFactor >= 0.30 && a.baseWidthFactor <= 0.60);
+  }
+  {
+    // Variety: scanning a month of seeds yields more than one modifier.
+    final mods = <String>{};
+    for (var d = 1; d <= 28; d++) {
+      mods.add(DailyConfig.fromSeed(dailySeedForDate(2026, 6, d)).modifier);
+    }
+    check('daily: modifiers vary across days', mods.length >= 2,
+        'got ${mods.length}');
+  }
+  // 15) Share card emoji bar.
+  check('bar: all perfect -> 5 green', perfectBar(10, 11) == '🟩🟩🟩🟩🟩');
+  check('bar: none -> 5 white', perfectBar(0, 11) == '⬜⬜⬜⬜⬜');
+  check('bar: trivial run -> empty bar', perfectBar(0, 1) == '⬜⬜⬜⬜⬜');
 
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {

@@ -30,6 +30,7 @@ import 'package:stack_duel/game/sound.dart';
 import 'package:stack_duel/game/stack_block.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
 import 'package:stack_duel/state/city_state.dart';
+import 'package:stack_duel/state/daily_seed.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/score_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
@@ -453,5 +454,38 @@ void main() {
     expect(b.tier, 0, reason: '2 perfects is still tier 0 (3 perfects = tier 1)');
     expect(cityState.totalHeight, 3);
     expect(cityState.cityLevel, 'Hamlet', reason: 'height 3 is a Hamlet');
+  });
+
+  testWithGame<StackDuelGame>(
+      'daily: a daily config narrows the base + drives the share card', create,
+      (game) async {
+    await game.ready();
+    final endlessBase = _top(game).size.x;
+    expect(game.isDaily, isFalse);
+
+    // Apply a deterministic "Narrow/Precise" daily and restart into it.
+    game.activeDaily = const DailyConfig(
+      seed: 20260101,
+      modifier: 'Narrow',
+      baseWidthFactor: 0.30,
+      startSpeed: 200,
+      speedPerPoint: 8,
+      perfectEpsilon: 5,
+      startRight: false,
+    );
+    game.restart();
+    await game.ready();
+
+    expect(game.isDaily, isTrue);
+    expect(_top(game).size.x, lessThan(endlessBase),
+        reason: 'narrow daily base is thinner than the default run');
+    final card = game.dailyShareCard();
+    expect(card, contains('Stack Daily #20260101'));
+    expect(card, contains('Narrow'));
+
+    // Returning to endless clears the daily.
+    game.playEndless();
+    await game.ready();
+    expect(game.isDaily, isFalse);
   });
 }

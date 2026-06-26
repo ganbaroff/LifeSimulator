@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../state/characters.dart';
 import '../state/city_state.dart';
 import '../state/coin_state.dart';
+import '../state/daily_seed.dart';
 import '../state/score_state.dart';
 import '../state/skin_state.dart';
 import 'ads.dart';
@@ -87,6 +88,17 @@ class StackDuelGame extends FlameGame {
   /// Genre flow hook (§13 knob). Not immortality: capped + speed ramp + any
   /// non-perfect drop narrows.
   static const double _perfectRestore = 14;
+
+  /// Active Daily Challenge config, or null for normal endless mode. Set via
+  /// [playDaily]; everyone on the same day shares the same deterministic run.
+  DailyConfig? activeDaily;
+
+  /// True while playing today's Daily Challenge (drives the share card).
+  bool get isDaily => activeDaily != null;
+
+  /// Base-width fraction + perfect window, overridden by the daily config.
+  double get _baseWidthFactor => activeDaily?.baseWidthFactor ?? 0.45;
+  double get _epsilon => activeDaily?.perfectEpsilon ?? _perfectEpsilon;
 
   /// Flat colour palette cycled per height — sourced from the selected skin.
   List<Color> get _palette => skinState.palette;
@@ -241,7 +253,7 @@ class StackDuelGame extends FlameGame {
     _centerX = size.x / 2;
 
     // Base block.
-    _baseWidth = size.x * 0.45;
+    _baseWidth = size.x * _baseWidthFactor;
     final base = StackBlock(
       position: Vector2(_centerX - _baseWidth / 2, 0),
       size: Vector2(_baseWidth, blockHeight),
@@ -257,6 +269,7 @@ class StackDuelGame extends FlameGame {
   }
 
   /// Resets the tower to a single base block. Called by the restart button.
+  /// Keeps the current mode (endless or today's daily).
   void restart() {
     analytics.event('restart');
     overlays.remove('gameOver');
@@ -264,12 +277,53 @@ class StackDuelGame extends FlameGame {
     resumeEngine();
   }
 
+  /// Start a normal endless run (from the title screen).
+  void playEndless() {
+    activeDaily = null;
+    overlays.remove('start');
+    _startNewRun();
+    resumeEngine();
+  }
+
+  /// Start today's Daily Challenge — a deterministic run shared by everyone
+  /// playing on the same local day (the "Wordle effect").
+  void playDaily() {
+    final now = DateTime.now();
+    activeDaily =
+        DailyConfig.fromSeed(dailySeedForDate(now.year, now.month, now.day));
+    overlays.remove('start');
+    _startNewRun();
+    resumeEngine();
+    analytics.event('daily_start', {'seed': activeDaily!.seed});
+  }
+
+  /// Return to the title screen.
+  void goHome() {
+    overlays.remove('gameOver');
+    overlays.add('start');
+  }
+
+  /// Shareable result card for a finished Daily run (copy -> paste into a chat).
+  /// The viral atom: same seed, comparable scores, an emoji grid like Wordle.
+  String dailyShareCard() {
+    final d = activeDaily;
+    if (d == null) return '';
+    final bar = perfectBar(_perfectsThisRun, _tower.length);
+    return '🏙 Stack Daily ${d.label}  ·  ${d.modifier}\n'
+        'Height ${_tower.length}  ·  Score ${scoreState.current}\n'
+        '$bar\n'
+        'https://ganbaroff.github.io/LifeSimulator/';
+  }
+
   // ---------------------------------------------------------------------------
   // Spawning
   // ---------------------------------------------------------------------------
 
-  double get _currentSpeed =>
-      math.min(_baseSpeed + scoreState.current * _speedPerPoint, _maxSpeed);
+  double get _currentSpeed {
+    final base = activeDaily?.startSpeed ?? _baseSpeed;
+    final per = activeDaily?.speedPerPoint ?? _speedPerPoint;
+    return math.min(base + scoreState.current * per, _maxSpeed);
+  }
 
   void _spawnMovingBlock() {
     final top = _tower.last;
@@ -280,12 +334,15 @@ class StackDuelGame extends FlameGame {
     final minX = _centerX - size.x / 2 + margin;
     final maxX = _centerX + size.x / 2 - margin;
 
+    // Daily seed can start the sweep from the right (variety + comparability).
+    final startRight = activeDaily?.startRight ?? true;
+
     final block = StackBlock(
-      position: Vector2(minX, y),
+      position: Vector2(startRight ? minX : maxX - width, y),
       size: Vector2(width, blockHeight),
       color: _palette[(_tower.length) % _palette.length],
       moving: true,
-      movingRight: true,
+      movingRight: startRight,
       speed: _currentSpeed,
     )
       ..minX = minX
@@ -340,7 +397,7 @@ class StackDuelGame extends FlameGame {
     // Perfect = dropped centre within epsilon of the top centre.
     final topCenter = (top.left + top.right) / 2;
     final dropCenter = (moving.left + moving.right) / 2;
-    final perfect = isPerfect(topCenter, dropCenter, _perfectEpsilon);
+    final perfect = isPerfect(topCenter, dropCenter, _epsilon);
 
     // The resting block is the overlap; on a perfect it grows back a little
     // (capped at the base width, recentred on the overlap) — the genre flow hook.

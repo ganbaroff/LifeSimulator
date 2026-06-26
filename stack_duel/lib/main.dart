@@ -1,5 +1,6 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'game/city_overlay.dart';
 import 'game/stack_duel_game.dart';
@@ -78,77 +79,90 @@ class StartOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Absorb background taps so they don't fall through to the running game
+    // (only the buttons should act).
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => game.overlays.remove('start'),
+      onTap: () {},
       child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF243B55), Color(0xFF0A0E15)],
-          ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF243B55), Color(0xFF0A0E15)],
         ),
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Three stacked bars echoing the game's tower (slightly offset).
-            Container(width: 120, height: 26, color: const Color(0xFFE74C3C)),
-            Container(
-              width: 150,
-              height: 26,
-              margin: const EdgeInsets.only(top: 3, left: 30),
-              color: const Color(0xFFE67E22),
+      ),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Three stacked bars echoing the game's tower (slightly offset).
+          Container(width: 120, height: 26, color: const Color(0xFFE74C3C)),
+          Container(
+            width: 150,
+            height: 26,
+            margin: const EdgeInsets.only(top: 3, left: 30),
+            color: const Color(0xFFE67E22),
+          ),
+          Container(
+            width: 132,
+            height: 26,
+            margin: const EdgeInsets.only(top: 3),
+            color: const Color(0xFFF1C40F),
+          ),
+          const SizedBox(height: 28),
+          const Text(
+            'STACK DUEL',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 40,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2,
             ),
-            Container(
-              width: 132,
-              height: 26,
-              margin: const EdgeInsets.only(top: 3),
-              color: const Color(0xFFF1C40F),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Best  ${game.scoreState.best}      ◆ ${game.coinState.total}',
+            style: const TextStyle(color: Colors.white70, fontSize: 16),
+          ),
+          const SizedBox(height: 36),
+          ElevatedButton(
+            onPressed: game.playEndless,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2ECC71),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(220, 52),
             ),
-            const SizedBox(height: 28),
-            const Text(
-              'STACK DUEL',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 40,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2,
-              ),
+            child: const Text('Play',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton(
+            onPressed: game.playDaily,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: const BorderSide(color: Color(0xFFF1C40F), width: 2),
+              minimumSize: const Size(220, 52),
             ),
-            const SizedBox(height: 10),
-            Text(
-              'Best  ${game.scoreState.best}      ◆ ${game.coinState.total}',
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-            const SizedBox(height: 40),
-            const Text(
-              'Tap to play',
-              style: TextStyle(
-                color: Color(0xFF2ECC71),
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (game.cityState.totalBuildings > 0) ...[
-              const SizedBox(height: 26),
-              // Inner GestureDetector absorbs the tap so it opens the city
-              // instead of falling through to "tap to play".
-              GestureDetector(
-                onTap: () => game.overlays.add('city'),
-                child: Text(
-                  'View City  ·  ${game.cityState.cityLevel}',
-                  style: const TextStyle(
-                    color: Color(0xFF3498DB),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+            child: const Text('Daily Challenge',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          ),
+          if (game.cityState.totalBuildings > 0) ...[
+            const SizedBox(height: 22),
+            GestureDetector(
+              onTap: () => game.overlays.add('city'),
+              child: Text(
+                'View City  ·  ${game.cityState.cityLevel}',
+                style: const TextStyle(
+                  color: Color(0xFF3498DB),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
+            ),
           ],
-        ),
+        ],
+      ),
       ),
     );
   }
@@ -178,6 +192,17 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _shareDaily() async {
+    await Clipboard.setData(ClipboardData(text: game.dailyShareCard()));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Result copied — paste it into any chat!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final skins = game.skinState;
@@ -191,14 +216,21 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Game Over',
-              style: TextStyle(
+            Text(
+              game.isDaily ? 'Daily Done' : 'Game Over',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
               ),
             ),
+            if (game.isDaily) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Daily ${game.activeDaily!.label}  ·  ${game.activeDaily!.modifier}',
+                style: const TextStyle(color: Color(0xFFF1C40F), fontSize: 14),
+              ),
+            ],
             const SizedBox(height: 16),
             Text(
               'Score: ${game.scoreState.current}',
@@ -231,17 +263,30 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                OutlinedButton(
-                  onPressed: () => game.overlays.add('city'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Color(0xFF3498DB)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                if (game.isDaily)
+                  OutlinedButton.icon(
+                    onPressed: _shareDaily,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFFF1C40F)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                    ),
+                    icon: const Icon(Icons.share, size: 18),
+                    label: const Text('Share', style: TextStyle(fontSize: 16)),
+                  )
+                else
+                  OutlinedButton(
+                    onPressed: () => game.overlays.add('city'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF3498DB)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                    ),
+                    child: Text('View City  (${game.cityState.totalBuildings})',
+                        style: const TextStyle(fontSize: 16)),
                   ),
-                  child: Text('View City  (${game.cityState.totalBuildings})',
-                      style: const TextStyle(fontSize: 16)),
-                ),
                 const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: game.restart,
@@ -251,9 +296,16 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 28, vertical: 12),
                   ),
-                  child: const Text('Restart', style: TextStyle(fontSize: 18)),
+                  child: Text(game.isDaily ? 'Retry' : 'Restart',
+                      style: const TextStyle(fontSize: 18)),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: game.goHome,
+              child: const Text('Home',
+                  style: TextStyle(color: Colors.white54, fontSize: 14)),
             ),
           ],
         ),

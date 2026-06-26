@@ -31,7 +31,11 @@ class CityOverlay extends StatelessWidget {
     final era = cityEra(city.totalHeight);
     final residents = residentsOf(buildings);
 
-    return Container(
+    return GestureDetector(
+      // Absorb stray taps so they don't fall through to the game underneath.
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -137,6 +141,7 @@ class CityOverlay extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
