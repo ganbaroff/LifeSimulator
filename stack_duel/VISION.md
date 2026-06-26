@@ -107,8 +107,14 @@ current growth market with real monetization (ads + TON/Stars). NOT Play-first
 
 ## Next action (post-compact resume)
 1. Re-read this file + HANDOFF.md (§15 build log = latest state).
-2. Start **P1 (City meta MVP)**: add `CityState` (persisted), an end-of-run
-   "added a building to your city" step, and a simple City screen + city level.
-   One feature → web build → owner plays the live link → judge.
-3. Owner side, when ready (parallel, no rush): @BotFather `/newapp` → Web App URL
+2. **P1 (City meta MVP) is SHIPPED** (commit 8e10211, build 1.1.0+16). Added
+   `city_math.dart` (pure: Building/buildingTier/cityLevelName) + `city_state.dart`
+   (persisted city), wired into `_endRun()` (each run → a building), and a City
+   screen overlay (skyline by tier + city level) with View City buttons. 35 pure
+   asserts + 27 flutter tests + analyze all green. Awaiting OWNER WEB TEST on the
+   live link → judge feel before P2.
+3. **Next = judge P1, then P2 (Evolution + eras)**: building tiers visibly evolve
+   by run quality; 2-3 era palette themes unlocked by city level (reuse skin
+   system). One feature → web build → owner judges.
+4. Owner side, when ready (parallel, no rush): @BotFather `/newapp` → Web App URL
    = the Pages link → get the `t.me` Mini App link.
