@@ -107,14 +107,21 @@ current growth market with real monetization (ads + TON/Stars). NOT Play-first
 
 ## Next action (post-compact resume)
 1. Re-read this file + HANDOFF.md (§15 build log = latest state).
-2. **P1 (City meta MVP) is SHIPPED** (commit 8e10211, build 1.1.0+16). Added
-   `city_math.dart` (pure: Building/buildingTier/cityLevelName) + `city_state.dart`
-   (persisted city), wired into `_endRun()` (each run → a building), and a City
-   screen overlay (skyline by tier + city level) with View City buttons. 35 pure
-   asserts + 27 flutter tests + analyze all green. Awaiting OWNER WEB TEST on the
-   live link → judge feel before P2.
-3. **Next = judge P1, then P2 (Evolution + eras)**: building tiers visibly evolve
-   by run quality; 2-3 era palette themes unlocked by city level (reuse skin
-   system). One feature → web build → owner judges.
-4. Owner side, when ready (parallel, no rush): @BotFather `/newapp` → Web App URL
+2. **P1 (City meta MVP) SHIPPED** (8e10211, build 1.1.0+16): `city_math.dart`
+   (pure) + `city_state.dart` (persisted) + `_endRun()` adds a building + City
+   overlay with View City buttons. Also added a service-worker auto-reload to
+   web/index.html (8723a5a) so fresh deploys show without a manual hard-refresh
+   (deploy-proof; the 77eef45-cache incident).
+3. **P2 (Evolution + eras) SHIPPED** (c4e3cb1, build 1.2.0+17): buildings show
+   tier visually (windows/roof/spire, newest glows); `cityEra` (pure) rethemes
+   the City screen sky+ground Rural→Classic→Modern→Neon by height. Fixed a
+   latent paint bug (borderRadius needs a UNIFORM border) + added
+   `test/city_overlay_test.dart` (widget render tests — the gap Flame headless
+   tests can't cover). 41 pure + 30 flutter green; analyze clean. Owner confirmed
+   on the live build (badge 8723a5a) right before P2; P2 auto-deploys.
+4. **Next = P3 (Characters + collection)**: residents populate finished
+   buildings, pop out / react on perfects, a small collectible set (gacha-light)
+   — surprise + personality + collection. One feature → web build → owner judges.
+   (Then P4 crystals/continue+ads, P5 Telegram social → retention gate.)
+5. Owner side, when ready (parallel, no rush): @BotFather `/newapp` → Web App URL
    = the Pages link → get the `t.me` Mini App link.
