@@ -1,0 +1,69 @@
+name: Stack Duel Web (GitHub Pages)
+
+# Builds the Flutter web version and publishes it to GitHub Pages, so the game
+# has a public HTTPS URL — playable in any browser and embeddable as a Telegram
+# Mini App, with no Play Store / signing / testing gate.
+on:
+  push:
+    branches:
+      - claude/stack-duel-flutter-game-dv0n5r
+    paths:
+      - "stack_duel/**"
+      - ".github/workflows/stack_duel_web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    defaults:
+      run:
+        working-directory: stack_duel
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # web/ scaffold is generated (not committed); generic, no customisation yet.
+      - name: Generate web scaffold
+        run: flutter create --platforms=web --org com.volaura --project-name stack_duel .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Short SHA
+        id: vars
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      # Project pages are served under /LifeSimulator/, so the base href must match.
+      - name: Build web
+        run: flutter build web --release --base-href /LifeSimulator/ --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}-web
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: stack_duel/build/web
+
+      - name: Deploy to Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
