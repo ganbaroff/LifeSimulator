@@ -7,6 +7,7 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
+import '../state/characters.dart';
 import '../state/city_state.dart';
 import '../state/coin_state.dart';
 import '../state/score_state.dart';
@@ -163,6 +164,11 @@ class StackDuelGame extends FlameGame {
       fontSize: 34,
       fontWeight: FontWeight.bold,
     ),
+  );
+
+  /// Resident emoji that pops on a perfect (P3).
+  final TextPaint _emojiPaint = TextPaint(
+    style: const TextStyle(fontSize: 26),
   );
 
   @override
@@ -375,6 +381,7 @@ class StackDuelGame extends FlameGame {
       sound.perfect(_combo);
       _showPerfectFlash();
       _perfectBurst(restLeft + restWidth / 2, y + blockHeight / 2);
+      _residentCheer(restLeft + restWidth / 2, y);
     } else {
       haptics.success();
       sound.drop();
@@ -421,6 +428,22 @@ class StackDuelGame extends FlameGame {
         },
       ),
     ));
+  }
+
+  /// A resident character pops out of a perfectly-placed block and hops up —
+  /// surprise + personality (VISION.md, P3). Cosmetic only; the building's real
+  /// resident is assigned from its final tier on the City screen.
+  void _residentCheer(double cx, double cy) {
+    final c = kAllResidents[_perfectsThisRun % kAllResidents.length];
+    final cheer = TextComponent(
+      text: c.glyph,
+      textRenderer: _emojiPaint,
+      position: Vector2(cx, cy),
+      anchor: Anchor.bottomCenter,
+    )
+      ..add(MoveEffect.by(Vector2(0, -46), EffectController(duration: 0.6)))
+      ..add(RemoveEffect(delay: 0.6));
+    world.add(cheer);
   }
 
   /// White flash over a just-placed block that fades out — landing juice.

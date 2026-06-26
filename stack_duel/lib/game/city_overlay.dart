@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../state/characters.dart';
 import '../state/city_math.dart';
 import 'stack_duel_game.dart';
 
@@ -28,6 +29,7 @@ class CityOverlay extends StatelessWidget {
     final city = game.cityState;
     final buildings = city.buildings;
     final era = cityEra(city.totalHeight);
+    final residents = residentsOf(buildings);
 
     return Container(
       decoration: BoxDecoration(
@@ -79,6 +81,32 @@ class CityOverlay extends StatelessWidget {
               child: Text(
                 '${city.totalBuildings} buildings   ·   height ${city.totalHeight}',
                 style: const TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+            ),
+            // Resident collection: who you've gathered so far.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+              child: Row(
+                children: [
+                  Text(
+                    'Residents ${residents.length}/${kAllResidents.length}  ',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Expanded(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 2,
+                      children: [
+                        for (final c in residents)
+                          Text(c.glyph, style: const TextStyle(fontSize: 18)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -146,6 +174,7 @@ class _Skyline extends StatelessWidget {
                 building: buildings[i],
                 color: tierColors[buildings[i].tier.clamp(0, 4)],
                 isNewest: i == buildings.length - 1,
+                resident: residentFor(buildings[i].tier, i),
               ),
           ],
         ),
@@ -162,11 +191,13 @@ class _BuildingBar extends StatelessWidget {
     required this.building,
     required this.color,
     required this.isNewest,
+    required this.resident,
   });
 
   final Building building;
   final Color color;
   final bool isNewest;
+  final Character resident;
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +213,8 @@ class _BuildingBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // The building's resident, peeking over the roof.
+          Text(resident.glyph, style: const TextStyle(fontSize: 16)),
           // Spire on the top tier (Skyscraper) — the "evolved" silhouette.
           if (tier >= 4)
             Container(width: 3, height: 14, color: Colors.white70),

@@ -83,5 +83,7 @@ void main() {
         reason: 'no overflow / border-radius paint errors in the skyline');
     expect(find.textContaining('Neon era'), findsOneWidget);
     expect(find.textContaining('5 buildings'), findsOneWidget);
+    // P3: five distinct-tier buildings -> five distinct residents collected.
+    expect(find.textContaining('Residents 5/9'), findsOneWidget);
   });
 }

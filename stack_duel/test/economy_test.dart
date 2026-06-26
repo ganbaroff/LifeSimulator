@@ -5,6 +5,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:stack_duel/state/characters.dart';
 import 'package:stack_duel/state/city_math.dart';
 import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
@@ -97,6 +98,28 @@ void main() {
     expect(cityLevelName(70), 'City');
     expect(cityLevelName(150), 'Metropolis');
     expect(cityLevelName(10000), 'Metropolis');
+  });
+
+  test('residents: pool rarity scales with building tier (P3)', () {
+    expect(residentFor(0, 0).rarity, 0, reason: 'shacks/houses -> common');
+    expect(residentFor(1, 0).rarity, 0);
+    expect(residentFor(2, 0).rarity, 1, reason: 'mid tiers -> uncommon');
+    expect(residentFor(3, 0).rarity, 1);
+    expect(residentFor(4, 0).rarity, 2, reason: 'skyscrapers -> rare');
+  });
+
+  test('residents: collection is distinct across buildings (P3)', () {
+    final residents = residentsOf(const [
+      Building(3, 0), // tier 0 -> Mason
+      Building(10, 1), // tier 1 -> Fern
+      Building(40, 2), // tier 2 -> Hoot
+      Building(60, 3), // tier 3 -> Wynn
+      Building(80, 4), // tier 4 -> Ember
+    ]);
+    expect(residents.length, 5, reason: 'five distinct residents');
+    expect(residents.map((c) => c.name),
+        containsAll(['Mason', 'Fern', 'Wynn', 'Ember']));
+    expect(kAllResidents.length, 9, reason: 'full collection size');
   });
 
   test('city: era advances with cumulative height (P2)', () {

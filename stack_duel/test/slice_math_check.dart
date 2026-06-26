@@ -8,6 +8,7 @@
 // Exits non-zero if any case fails.
 
 import '../lib/game/slice_math.dart';
+import '../lib/state/characters.dart';
 import '../lib/state/city_math.dart';
 
 int _pass = 0;
@@ -118,6 +119,26 @@ void main() {
   check('era: height 70 -> Modern', cityEra(70).name == 'Modern');
   check('era: height 149 -> Modern', cityEra(149).name == 'Modern');
   check('era: height 150 -> Neon', cityEra(150).name == 'Neon');
+
+  // 13) Residents (P3): better buildings draw rarer residents; collection dedupes.
+  check('resident: tier 0 -> common', residentFor(0, 0).rarity == 0);
+  check('resident: tier 1 -> common', residentFor(1, 0).rarity == 0);
+  check('resident: tier 2 -> uncommon', residentFor(2, 0).rarity == 1);
+  check('resident: tier 3 -> uncommon', residentFor(3, 0).rarity == 1);
+  check('resident: tier 4 -> rare', residentFor(4, 0).rarity == 2);
+  {
+    // Five tier-0 buildings cycle the 4 common residents; index 0 and 4 are the
+    // same (4 % 4 == 0), so the collection must dedupe to 4 unique entries.
+    final list = residentsOf(const [
+      Building(5, 0),
+      Building(9, 0),
+      Building(9, 0),
+      Building(9, 0),
+      Building(7, 0),
+    ]);
+    check('residents: collection dedupes by name (5 buildings -> 4 unique)',
+        list.length == 4, 'got ${list.length}');
+  }
 
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {
