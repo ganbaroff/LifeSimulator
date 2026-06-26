@@ -119,9 +119,18 @@ current growth market with real monetization (ads + TON/Stars). NOT Play-first
    `test/city_overlay_test.dart` (widget render tests — the gap Flame headless
    tests can't cover). 41 pure + 30 flutter green; analyze clean. Owner confirmed
    on the live build (badge 8723a5a) right before P2; P2 auto-deploys.
-4. **Next = P3 (Characters + collection)**: residents populate finished
-   buildings, pop out / react on perfects, a small collectible set (gacha-light)
-   — surprise + personality + collection. One feature → web build → owner judges.
-   (Then P4 crystals/continue+ads, P5 Telegram social → retention gate.)
-5. Owner side, when ready (parallel, no rush): @BotFather `/newapp` → Web App URL
+4. **P3 (Characters + collection) SHIPPED** (a8557a6, build 1.3.0+18):
+   `characters.dart` (pure: 9 residents, common/uncommon/rare; `residentFor`,
+   `residentsOf`). City screen shows each building's resident + "Residents X/9"
+   collection; perfect drops pop a resident in-game. Owner confirmed the city
+   concept on the live build ("отлично что дальше") right before P3.
+   **IMPORTANT cache lesson:** the Flutter web service worker pinned old builds
+   ("ничего не изменилось", frozen badge) — FIXED by building with
+   `--pwa-strategy=none` + an index.html SW purge (57772a4). Deploys are fresh now.
+5. **Next = P4 (Continue economy)**: hard currency **crystals**; revive/continue
+   a run on game-over for crystals OR a rewarded ad; double-coins; wire a real ad
+   SDK (test ids first). The monetization hook — but per the gate, keep it light
+   and validate retention (P5 Telegram social) before heavy IAP. One feature →
+   web build → owner judges.
+6. Owner side, when ready (parallel, no rush): @BotFather `/newapp` → Web App URL
    = the Pages link → get the `t.me` Mini App link.
