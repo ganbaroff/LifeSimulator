@@ -141,6 +141,13 @@ current growth market with real monetization (ads + TON/Stars). NOT Play-first
       challenge (every Daily share = a duel). Client-only — works via any link.
       FUTURE polish (needs bot): real challenger names via Telegram WebApp user;
       a true live "ghost tower" replay (would need per-drop data or a backend).
+   b2. **Resident POWERS — SHIPPED** (644ccd7, build 1.6.0+21): the core<->meta
+      loop, my honest #1 gap. `powers.dart` (pure): Widen/Slow-Mo/Perfect,
+      `unlockedPowers(buildings,height,residents)`. Each run builds a deck from
+      city progress (1 charge each); an on-screen `_PowerBar` (Flame component)
+      lets you spend them: Widen=full-width block, Slow-Mo=crawl ~3s,
+      Perfect=auto-centre next drop. Collection now = a deck of tools, not a
+      trophy shelf. 75 pure + 36 flutter green.
    c. **NEXT → Living city**: events (storm/quake → rebuild), resident quests, set
       bonuses. Pure client, deepens single-player meta.
    d. **Stars shop + referral**: crystals economy + revive + cosmetics/era-themes;
