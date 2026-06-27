@@ -148,6 +148,13 @@ current growth market with real monetization (ads + TON/Stars). NOT Play-first
       lets you spend them: Widen=full-width block, Slow-Mo=crawl ~3s,
       Perfect=auto-centre next drop. Collection now = a deck of tools, not a
       trophy shelf. 75 pure + 36 flutter green.
+   b3. **MEGA-UPDATE batch 1 — SHIPPED** (55db20e, build 1.7.0+22): 12 innovations
+      — 💎 crystals (crystal_state), 🏆 9 achievements (achievements.dart, pure
+      rule + screen + crystal rewards/toasts), 🔥 daily streak (streak_state),
+      🛡️ Shield power (4th), ✨ golden bonus blocks, ON FIRE/UNSTOPPABLE combo
+      fanfare, game-over screen shake, ❤️ Revive-for-crystals (monetization hook,
+      revive-safe guarded finalize so no double-count). 77 pure + 43 flutter green.
+      Owner asked to "go big / 56 innovations" — delivering in tested batches.
    c. **NEXT → Living city**: events (storm/quake → rebuild), resident quests, set
       bonuses. Pure client, deepens single-player meta.
    d. **Stars shop + referral**: crystals economy + revive + cosmetics/era-themes;
