@@ -206,8 +206,11 @@ void main() {
       unlockedPowers(0, 150, 0).contains(kAutocenter));
   check('power: no perfect early',
       !unlockedPowers(2, 10, 1).contains(kAutocenter));
-  check('power: full deck of 3 when maxed',
-      unlockedPowers(20, 200, 9).length == 3);
+  check('power: shield at height 70',
+      unlockedPowers(0, 70, 0).contains(kShield));
+  check('power: no shield early', !unlockedPowers(2, 20, 1).contains(kShield));
+  check('power: full deck of 4 when maxed',
+      unlockedPowers(20, 200, 9).length == 4);
 
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {

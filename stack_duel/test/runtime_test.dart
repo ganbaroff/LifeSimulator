@@ -29,10 +29,13 @@ import 'package:stack_duel/game/haptics.dart';
 import 'package:stack_duel/game/sound.dart';
 import 'package:stack_duel/game/stack_block.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
+import 'package:stack_duel/state/achievements.dart';
 import 'package:stack_duel/state/city_state.dart';
+import 'package:stack_duel/state/crystal_state.dart';
 import 'package:stack_duel/state/daily_seed.dart';
 import 'package:stack_duel/state/duel.dart';
 import 'package:stack_duel/state/powers.dart';
+import 'package:stack_duel/state/streak_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/score_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
@@ -111,6 +114,9 @@ void main() {
   late CoinState coinState;
   late SkinState skinState;
   late CityState cityState;
+  late CrystalState crystalState;
+  late AchievementState achievementState;
+  late StreakState streakState;
   late FakeHaptics haptics;
   late FakeSound sound;
   late FakeAds ads;
@@ -125,6 +131,12 @@ void main() {
     await skinState.load();
     cityState = CityState();
     await cityState.load();
+    crystalState = CrystalState();
+    await crystalState.load();
+    achievementState = AchievementState();
+    await achievementState.load();
+    streakState = StreakState();
+    await streakState.load();
     haptics = FakeHaptics();
     sound = FakeSound();
     ads = FakeAds();
@@ -135,6 +147,9 @@ void main() {
         coinState: coinState,
         skinState: skinState,
         cityState: cityState,
+        crystalState: crystalState,
+        achievementState: achievementState,
+        streakState: streakState,
         haptics: haptics,
         sound: sound,
         ads: ads,
@@ -553,8 +568,10 @@ void main() {
     game.restart();
     await game.ready();
 
-    expect(game.powerDeck.length, 3, reason: 'slow-mo + perfect now unlocked');
+    expect(game.powerDeck.length, 4,
+        reason: 'slow-mo + shield + perfect now unlocked');
     expect(game.powerDeck.map((p) => p.id), contains(PowerId.autocenter));
+    expect(game.powerDeck.map((p) => p.id), contains(PowerId.shield));
 
     // Arm Perfect, then deliberately drop off-centre — it should still be perfect.
     expect(game.activatePower(PowerId.autocenter), isTrue);
@@ -570,5 +587,53 @@ void main() {
     game.dropBlock();
     await game.ready();
     expect(game.powersVisible, isFalse, reason: 'no powers after game over');
+  });
+
+  testWithGame<StackDuelGame>(
+      'powers: Shield survives one full miss, then the run can still end', create,
+      (game) async {
+    await cityState.addBuilding(200, 12); // unlock shield (height >= 70)
+    game.restart();
+    await game.ready();
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+    expect(game.powerDeck.map((p) => p.id), contains(PowerId.shield));
+
+    expect(game.activatePower(PowerId.shield), isTrue);
+
+    // A full miss that would normally end the run.
+    _moving(game).position.x = _top(game).right + 80;
+    game.dropBlock();
+    await game.ready();
+    expect(game.isGameOver, isFalse, reason: 'shield saved the run');
+    expect(game.runActive, isTrue);
+    expect(_blocks(game).where((b) => b.moving).length, 1,
+        reason: 'a fresh block to keep playing');
+
+    // Shield is spent — the next full miss really ends it.
+    _moving(game).position.x = _top(game).right + 80;
+    game.dropBlock();
+    await game.ready();
+    expect(game.isGameOver, isTrue);
+  });
+
+  testWithGame<StackDuelGame>(
+      'revive: spends crystals to continue the same run', create, (game) async {
+    await crystalState.add(10);
+    await game.ready();
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+
+    // End the run.
+    _moving(game).position.x = _top(game).right + 80;
+    game.dropBlock();
+    await game.ready();
+    expect(game.isGameOver, isTrue);
+    expect(game.canRevive, isTrue, reason: '10 crystals >= revive cost');
+    final cost = game.reviveCost;
+
+    final ok = await game.revive();
+    expect(ok, isTrue);
+    expect(game.crystalState.total, 10 - cost, reason: 'crystals spent');
+    expect(game.isGameOver, isFalse, reason: 'run continues');
+    expect(game.runActive, isTrue);
   });
 }

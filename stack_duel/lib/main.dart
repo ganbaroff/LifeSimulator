@@ -2,13 +2,17 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'game/achievements_overlay.dart';
 import 'game/city_overlay.dart';
 import 'game/stack_duel_game.dart';
+import 'state/achievements.dart';
 import 'state/city_state.dart';
 import 'state/coin_state.dart';
+import 'state/crystal_state.dart';
 import 'state/duel.dart';
 import 'state/score_state.dart';
 import 'state/skin_state.dart';
+import 'state/streak_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +26,12 @@ Future<void> main() async {
   await skinState.load();
   final cityState = CityState();
   await cityState.load();
+  final crystalState = CrystalState();
+  await crystalState.load();
+  final achievementState = AchievementState();
+  await achievementState.load();
+  final streakState = StreakState();
+  await streakState.load();
 
   // If the page was opened from a duel link (?duel=token), decode the challenge.
   DuelChallenge? incomingDuel;
@@ -35,6 +45,9 @@ Future<void> main() async {
     coinState: coinState,
     skinState: skinState,
     cityState: cityState,
+    crystalState: crystalState,
+    achievementState: achievementState,
+    streakState: streakState,
     incomingDuel: incomingDuel,
   ));
 }
@@ -46,6 +59,9 @@ class StackDuelApp extends StatelessWidget {
     required this.coinState,
     required this.skinState,
     required this.cityState,
+    required this.crystalState,
+    required this.achievementState,
+    required this.streakState,
     this.incomingDuel,
   });
 
@@ -53,6 +69,9 @@ class StackDuelApp extends StatelessWidget {
   final CoinState coinState;
   final SkinState skinState;
   final CityState cityState;
+  final CrystalState crystalState;
+  final AchievementState achievementState;
+  final StreakState streakState;
   final DuelChallenge? incomingDuel;
 
   @override
@@ -62,6 +81,9 @@ class StackDuelApp extends StatelessWidget {
       coinState: coinState,
       skinState: skinState,
       cityState: cityState,
+      crystalState: crystalState,
+      achievementState: achievementState,
+      streakState: streakState,
     );
 
     return MaterialApp(
@@ -76,6 +98,7 @@ class StackDuelApp extends StatelessWidget {
                 StartOverlay(game: game, duel: incomingDuel),
             'gameOver': (context, game) => GameOverOverlay(game: game),
             'city': (context, game) => CityOverlay(game: game),
+            'achievements': (context, game) => AchievementsOverlay(game: game),
           },
         ),
       ),
@@ -136,9 +159,16 @@ class StartOverlay extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Best  ${game.scoreState.best}      ◆ ${game.coinState.total}',
+            'Best  ${game.scoreState.best}      ◆ ${game.coinState.total}      💎 ${game.crystalState.total}',
             style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
+          if (game.streakState.current > 0) ...[
+            const SizedBox(height: 6),
+            Text(
+              '🔥 ${game.streakState.current}-day streak',
+              style: const TextStyle(color: Color(0xFFE67E22), fontSize: 14),
+            ),
+          ],
           const SizedBox(height: 28),
           // Incoming duel: prominent Accept banner.
           if (duel != null) ...[
@@ -218,6 +248,18 @@ class StartOverlay extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: () => game.overlays.add('achievements'),
+            child: Text(
+              '🏆 Achievements  ${game.achievementState.count}/${kAchievements.length}',
+              style: const TextStyle(
+                color: Color(0xFFF1C40F),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
       ),
@@ -316,9 +358,37 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Coins: ${game.coinState.total}',
+              'Coins: ${game.coinState.total}      💎 ${game.crystalState.total}',
               style: const TextStyle(color: Color(0xFFF1C40F), fontSize: 18),
             ),
+            // Freshly-unlocked achievements (with their crystal payouts).
+            if (game.lastUnlocked.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              for (final a in game.lastUnlocked)
+                Text('🏆 ${a.glyph} ${a.name}  +💎${a.reward}',
+                    style: const TextStyle(
+                        color: Color(0xFF2ECC71),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
+            ],
+            // Revive: spend crystals to continue this run (the monetization hook).
+            if (game.canRevive) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await game.revive();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE74C3C),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(220, 48),
+                ),
+                icon: const Icon(Icons.favorite, size: 18),
+                label: Text('Revive  💎${game.reviveCost}',
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.bold)),
+              ),
+            ],
             const SizedBox(height: 18),
             Row(
               mainAxisSize: MainAxisSize.min,

@@ -14,10 +14,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:stack_duel/game/city_overlay.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
+import 'package:stack_duel/state/achievements.dart';
 import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
+import 'package:stack_duel/state/crystal_state.dart';
 import 'package:stack_duel/state/score_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
+import 'package:stack_duel/state/streak_state.dart';
 
 Future<StackDuelGame> _gameWithCity(List<List<int>> runs) async {
   SharedPreferences.setMockInitialValues({});
@@ -32,11 +35,20 @@ Future<StackDuelGame> _gameWithCity(List<List<int>> runs) async {
   for (final r in runs) {
     await city.addBuilding(r[0], r[1]); // [height, perfects]
   }
+  final crystal = CrystalState();
+  await crystal.load();
+  final ach = AchievementState();
+  await ach.load();
+  final streak = StreakState();
+  await streak.load();
   return StackDuelGame(
     scoreState: score,
     coinState: coin,
     skinState: skin,
     cityState: city,
+    crystalState: crystal,
+    achievementState: ach,
+    streakState: streak,
   );
 }
 

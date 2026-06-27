@@ -7,14 +7,17 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
+import '../state/achievements.dart';
 import '../state/characters.dart';
 import '../state/city_state.dart';
 import '../state/coin_state.dart';
+import '../state/crystal_state.dart';
 import '../state/daily_seed.dart';
 import '../state/duel.dart';
 import '../state/powers.dart';
 import '../state/score_state.dart';
 import '../state/skin_state.dart';
+import '../state/streak_state.dart';
 import 'ads.dart';
 import 'analytics.dart';
 import 'falling_piece.dart';
@@ -36,6 +39,9 @@ class StackDuelGame extends FlameGame {
     required this.coinState,
     required this.skinState,
     required this.cityState,
+    required this.crystalState,
+    required this.achievementState,
+    required this.streakState,
     this.haptics = const DeviceHaptics(),
     this.analytics = const NoopAnalytics(),
     this.sound = const GameSound(),
@@ -52,6 +58,15 @@ class StackDuelGame extends FlameGame {
 
   /// Persistent city meta — each completed run adds a building (VISION.md, P1).
   final CityState cityState;
+
+  /// Hard currency (revives, premium). Earned from achievements + golden blocks.
+  final CrystalState crystalState;
+
+  /// Persisted achievement unlocks (the goal layer).
+  final AchievementState achievementState;
+
+  /// Daily streak (return hook).
+  final StreakState streakState;
 
   /// Tactile feedback seam (injected so tests can use a fake).
   final Haptics haptics;
@@ -155,7 +170,34 @@ class StackDuelGame extends FlameGame {
   /// Armed/active effects.
   bool _widenArmed = false;
   bool _autoCenterArmed = false;
+  bool _shieldArmed = false;
   double _slowmoTimer = 0;
+
+  // --- Run stats + economy finalize (revive-safe). -------------------------
+  /// Best combo reached this run (for achievements).
+  int _bestComboThisRun = 0;
+
+  /// Whether any power was used this run (achievement).
+  bool _usedPowerThisRun = false;
+
+  /// Guards once-per-run economy (coins + city building) across revives.
+  bool _finalizedThisRun = false;
+
+  /// Times revived this run (revive cost scales with it).
+  int _reviveCount = 0;
+
+  /// Achievements newly unlocked on the latest game over (shown on the overlay).
+  List<Achievement> lastUnlocked = [];
+
+  /// True if the current top moving block is a golden bonus block.
+  bool _movingGolden = false;
+
+  /// Crystal cost to revive the current run (scales each revive).
+  int get reviveCost => 2 + _reviveCount * 2;
+
+  /// Whether a revive is currently offered (died, affordable, not too many).
+  bool get canRevive =>
+      isGameOver && _reviveCount < 3 && crystalState.total >= reviveCost;
 
   List<Power> get powerDeck => _deck;
   bool get powersVisible => runActive && !isGameOver;
@@ -303,7 +345,14 @@ class StackDuelGame extends FlameGame {
       ..addEntries(_deck.map((p) => MapEntry(p.id, 1)));
     _widenArmed = false;
     _autoCenterArmed = false;
+    _shieldArmed = false;
     _slowmoTimer = 0;
+    _bestComboThisRun = 0;
+    _usedPowerThisRun = false;
+    _finalizedThisRun = false;
+    _reviveCount = 0;
+    _movingGolden = false;
+    lastUnlocked = [];
     runActive = true;
 
     _centerX = size.x / 2;
@@ -428,10 +477,16 @@ class StackDuelGame extends FlameGame {
     // Daily seed can start the sweep from the right (variety + comparability).
     final startRight = activeDaily?.startRight ?? true;
 
+    // Every so often a golden bonus block appears (extra score + a crystal).
+    _movingGolden = _tower.length > 0 && _tower.length % 11 == 0;
+    final color = _movingGolden
+        ? const Color(0xFFFFD54A)
+        : _palette[(_tower.length) % _palette.length];
+
     final block = StackBlock(
       position: Vector2(startRight ? minX : maxX - width, y),
       size: Vector2(width, blockHeight),
-      color: _palette[(_tower.length) % _palette.length],
+      color: color,
       moving: true,
       movingRight: startRight,
       speed: _currentSpeed,
@@ -456,6 +511,7 @@ class StackDuelGame extends FlameGame {
     if (!runActive || isGameOver) return false;
     if ((_charges[id] ?? 0) <= 0) return false;
     _charges[id] = _charges[id]! - 1;
+    _usedPowerThisRun = true;
     switch (id) {
       case PowerId.widen:
         _widenArmed = true;
@@ -465,6 +521,9 @@ class StackDuelGame extends FlameGame {
         break;
       case PowerId.autocenter:
         _autoCenterArmed = true;
+        break;
+      case PowerId.shield:
+        _shieldArmed = true;
         break;
     }
     haptics.success();
@@ -498,7 +557,7 @@ class StackDuelGame extends FlameGame {
 
     if (result.gameOver) {
       // Let the missed block keep its position but tip it off as a falling
-      // piece, then end the run.
+      // piece.
       world.remove(moving);
       world.add(FallingPiece(
         position: Vector2(moving.position.x, y),
@@ -507,6 +566,15 @@ class StackDuelGame extends FlameGame {
         removeBelowY: y + 2000,
       ));
       _moving = null;
+      // Shield power: survive this miss and get the block back.
+      if (_shieldArmed) {
+        _shieldArmed = false;
+        haptics.perfect();
+        sound.perfect(1);
+        _floatText('🛡️ SAVED', size.y * 0.30);
+        _spawnMovingBlock();
+        return;
+      }
       _endRun();
       return;
     }
@@ -553,6 +621,7 @@ class StackDuelGame extends FlameGame {
 
     final prevCombo = _combo;
     _combo = perfect ? _combo + 1 : 0;
+    if (_combo > _bestComboThisRun) _bestComboThisRun = _combo;
     if (_combo != prevCombo) {
       analytics.event('combo_changed', {'combo': _combo});
     }
@@ -564,6 +633,9 @@ class StackDuelGame extends FlameGame {
       _showPerfectFlash();
       _perfectBurst(restLeft + restWidth / 2, y + blockHeight / 2);
       _residentCheer(restLeft + restWidth / 2, y);
+      // Combo milestone fanfare.
+      if (_combo == 5) _floatText('🔥 ON FIRE', size.y * 0.2);
+      if (_combo == 8) _floatText('⚡ UNSTOPPABLE', size.y * 0.2);
     } else {
       haptics.success();
       sound.drop();
@@ -571,6 +643,15 @@ class StackDuelGame extends FlameGame {
 
     // Combo multiplier feeds the score (capped — see comboMultiplier).
     scoreState.add(comboMultiplier(_combo));
+
+    // Golden bonus block payout: extra score + a crystal.
+    if (_movingGolden) {
+      scoreState.add(3);
+      crystalState.add(1);
+      _floatText('💎 +1', size.y * 0.34);
+      analytics.event('golden_block');
+    }
+
     _updateHud();
     _spawnMovingBlock();
   }
@@ -586,6 +667,29 @@ class StackDuelGame extends FlameGame {
       scale: Vector2.all(grow),
     )..add(RemoveEffect(delay: 0.55));
     camera.viewport.add(flash);
+  }
+
+  /// A transient floating text near the top-centre (asset-free fanfare).
+  void _floatText(String text, double y) {
+    final t = TextComponent(
+      text: text,
+      textRenderer: _perfectPaint,
+      position: Vector2(size.x / 2, y),
+      anchor: Anchor.center,
+    )
+      ..add(MoveEffect.by(Vector2(0, -24), EffectController(duration: 0.6)))
+      ..add(RemoveEffect(delay: 0.7));
+    camera.viewport.add(t);
+  }
+
+  /// A quick game-over screen shake (net-zero so the camera returns to rest).
+  void _screenShake() {
+    camera.viewfinder.add(SequenceEffect([
+      MoveEffect.by(Vector2(0, 10), EffectController(duration: 0.04)),
+      MoveEffect.by(Vector2(0, -18), EffectController(duration: 0.05)),
+      MoveEffect.by(Vector2(0, 12), EffectController(duration: 0.05)),
+      MoveEffect.by(Vector2(0, -4), EffectController(duration: 0.04)),
+    ]));
   }
 
   /// Small white spark burst on a perfect (asset-free, Flame core particles).
@@ -657,36 +761,82 @@ class StackDuelGame extends FlameGame {
     haptics.gameOver();
     sound.gameOver();
     _screenFlash(const Color(0x55E74C3C), 0.4); // red game-over flash
+    _screenShake();
     analytics.event('game_over', {
       'score': scoreState.current,
       'blocks': _tower.length,
     });
 
-    // Economy: earn one coin per perfect this run (cosmetic-only; §12).
-    if (_perfectsThisRun > 0) {
-      coinState.add(_perfectsThisRun);
-      analytics.event('coins_earned', {'coins': _perfectsThisRun});
+    // Once-per-run economy (guarded so a revived run isn't double-counted):
+    // coins from perfects + a city building + the interstitial cadence.
+    if (!_finalizedThisRun) {
+      _finalizedThisRun = true;
+      if (_perfectsThisRun > 0) {
+        coinState.add(_perfectsThisRun);
+        analytics.event('coins_earned', {'coins': _perfectsThisRun});
+      }
+      _gameOvers += 1;
+      if (_gameOvers % 3 == 0) {
+        ads.showInterstitial();
+        analytics.event('ad_interstitial', {'count': _gameOvers});
+      }
+      final building =
+          await cityState.addBuilding(_tower.length, _perfectsThisRun);
+      analytics.event('building_added', {
+        'height': building.height,
+        'tier': building.tier,
+        'city_level': cityState.cityLevel,
+      });
     }
 
-    // Interstitial cadence: every 3rd game over (not the 1st/2nd) — §12.
-    _gameOvers += 1;
-    if (_gameOvers % 3 == 0) {
-      ads.showInterstitial();
-      analytics.event('ad_interstitial', {'count': _gameOvers});
-    }
-
-    // City meta: this run becomes a building in the persistent city. Tower
-    // height + perfects decide its size + quality tier (VISION.md, P1).
-    final building =
-        await cityState.addBuilding(_tower.length, _perfectsThisRun);
-    analytics.event('building_added', {
-      'height': building.height,
-      'tier': building.tier,
-      'city_level': cityState.cityLevel,
-    });
-
+    // Goals re-evaluate every death (recordEarned dedups; pays crystals).
+    await _evaluateAchievements();
+    await streakState.recordPlay(_todayEpochDay());
     await scoreState.maybeUpdateBest();
     _updateHud();
+  }
+
+  int _todayEpochDay() {
+    final n = DateTime.now();
+    return epochDayFor(n.year, n.month, n.day);
+  }
+
+  /// Unlock + pay out any achievements earned this run; stash the new ones for
+  /// the game-over overlay to toast.
+  Future<void> _evaluateAchievements() async {
+    final stats = RunStats(
+      perfects: _perfectsThisRun,
+      bestCombo: _bestComboThisRun,
+      height: _tower.length,
+      cityIsMetropolis: cityState.cityLevel == 'Metropolis',
+      duelWon: isDuel && scoreState.current > activeOpponent!.score,
+      usedPower: _usedPowerThisRun,
+      residentCount: residentsOf(cityState.buildings).length,
+    );
+    final fresh = await achievementState.recordEarned(achievementsEarned(stats));
+    lastUnlocked = fresh;
+    for (final a in fresh) {
+      await crystalState.add(a.reward);
+    }
+  }
+
+  /// Spend crystals to continue the current run with the tower intact — the
+  /// genre's monetization hook (continue-for-currency).
+  Future<bool> revive() async {
+    if (!canRevive) return false;
+    if (!await crystalState.spend(reviveCost)) return false;
+    _reviveCount += 1;
+    isGameOver = false;
+    _dying = false;
+    runActive = true;
+    _combo = 0;
+    lastUnlocked = [];
+    overlays.remove('gameOver');
+    _floatText('❤️ REVIVED', size.y * 0.28);
+    _spawnMovingBlock();
+    resumeEngine();
+    analytics.event('revive', {'count': _reviveCount});
+    return true;
   }
 
   // ---------------------------------------------------------------------------
@@ -735,7 +885,8 @@ class StackDuelGame extends FlameGame {
     _scoreText.text =
         'Score: ${scoreState.current}    Best: ${scoreState.best}';
     _comboText.text = _combo > 0 ? 'Combo ×${comboMultiplier(_combo)}' : '';
-    _coinText.text = 'Coins: ${coinState.total}';
+    _coinText.text =
+        'Coins: ${coinState.total}    💎 ${crystalState.total}';
     _vsText.text = isDuel
         ? 'vs ${duelDisplayName(activeOpponent!.name)}: ${activeOpponent!.score}'
         : '';

@@ -5,11 +5,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:stack_duel/state/achievements.dart';
 import 'package:stack_duel/state/characters.dart';
 import 'package:stack_duel/state/city_math.dart';
 import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
+import 'package:stack_duel/state/crystal_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
+import 'package:stack_duel/state/streak_state.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -120,6 +123,79 @@ void main() {
     expect(residents.map((c) => c.name),
         containsAll(['Mason', 'Fern', 'Wynn', 'Ember']));
     expect(kAllResidents.length, 9, reason: 'full collection size');
+  });
+
+  // --- Mega-update: crystals, achievements, streak --------------------------
+
+  test('crystals: add and spend, never negative', () async {
+    final c = CrystalState();
+    await c.load();
+    await c.add(5);
+    expect(c.total, 5);
+    expect(await c.spend(2), isTrue);
+    expect(c.total, 3);
+    expect(await c.spend(99), isFalse);
+    expect(c.total, 3);
+  });
+
+  test('achievements: earned rule fires on the right stats', () {
+    const s = RunStats(
+      perfects: 1,
+      bestCombo: 5,
+      height: 50,
+      cityIsMetropolis: false,
+      duelWon: false,
+      usedPower: true,
+      residentCount: 2,
+    );
+    final earned = achievementsEarned(s);
+    expect(earned, contains(AchId.firstPerfect));
+    expect(earned, contains(AchId.combo5));
+    expect(earned, contains(AchId.height50));
+    expect(earned, contains(AchId.powerUser));
+    expect(earned, isNot(contains(AchId.combo8)));
+    expect(earned, isNot(contains(AchId.metropolis)));
+  });
+
+  test('achievements: recordEarned returns only NEW unlocks + persists',
+      () async {
+    final ach = AchievementState();
+    await ach.load();
+    final first =
+        await ach.recordEarned({AchId.firstPerfect, AchId.height50});
+    expect(first.map((a) => a.id),
+        containsAll([AchId.firstPerfect, AchId.height50]));
+    expect(ach.count, 2);
+    // Re-recording the same + one new returns only the new one.
+    final second =
+        await ach.recordEarned({AchId.firstPerfect, AchId.combo5});
+    expect(second.map((a) => a.id), [AchId.combo5]);
+    expect(ach.count, 3);
+
+    final reloaded = AchievementState();
+    await reloaded.load();
+    expect(reloaded.count, 3);
+    expect(reloaded.isUnlocked(AchId.combo5), isTrue);
+  });
+
+  test('streak: pure nextStreak handles same/next/gap days', () {
+    expect(nextStreak(100, 100, 4), 4, reason: 'same day unchanged');
+    expect(nextStreak(100, 101, 4), 5, reason: 'next day increments');
+    expect(nextStreak(100, 105, 4), 1, reason: 'a gap resets to 1');
+  });
+
+  test('streak: recordPlay builds across consecutive days, resets on a gap',
+      () async {
+    final s = StreakState();
+    await s.load();
+    final d = epochDayFor(2026, 6, 27);
+    expect(await s.recordPlay(d), 1);
+    expect(await s.recordPlay(d), 1, reason: 'same day no change');
+    expect(await s.recordPlay(d + 1), 2);
+    expect(await s.recordPlay(d + 2), 3);
+    expect(s.best, 3);
+    expect(await s.recordPlay(d + 5), 1, reason: 'missed days reset');
+    expect(s.best, 3, reason: 'best preserved');
   });
 
   test('city: era advances with cumulative height (P2)', () {

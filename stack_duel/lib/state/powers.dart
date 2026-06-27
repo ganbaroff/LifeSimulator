@@ -6,7 +6,7 @@
 // Pure: unlock rules are plain functions of city progress, unit-testable with a
 // plain Dart SDK (see test/slice_math_check.dart).
 
-enum PowerId { widen, slowmo, autocenter }
+enum PowerId { widen, slowmo, autocenter, shield }
 
 /// A deployable in-run ability.
 class Power {
@@ -24,9 +24,11 @@ const Power kSlowmo =
     Power(PowerId.slowmo, 'Slow-Mo', '⏳', 'The block crawls for a moment');
 const Power kAutocenter =
     Power(PowerId.autocenter, 'Perfect', '🎯', 'Next drop auto-centers');
+const Power kShield =
+    Power(PowerId.shield, 'Shield', '🛡️', 'Survive one miss this run');
 
 /// All powers, in deck order.
-const List<Power> kAllPowers = [kWiden, kSlowmo, kAutocenter];
+const List<Power> kAllPowers = [kWiden, kSlowmo, kAutocenter, kShield];
 
 /// Powers unlocked for a run, given city progress. The loop made explicit:
 ///  - Widen is always available (teaches the mechanic on run one).
@@ -40,6 +42,7 @@ List<Power> unlockedPowers(
 ) {
   final out = <Power>[kWiden];
   if (totalHeight >= 30 || totalBuildings >= 5) out.add(kSlowmo);
+  if (totalHeight >= 70 || totalBuildings >= 10) out.add(kShield);
   if (residentCount >= 4 || totalHeight >= 150) out.add(kAutocenter);
   return out;
 }
