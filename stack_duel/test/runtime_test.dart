@@ -32,6 +32,7 @@ import 'package:stack_duel/game/stack_duel_game.dart';
 import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/daily_seed.dart';
 import 'package:stack_duel/state/duel.dart';
+import 'package:stack_duel/state/powers.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/score_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
@@ -520,5 +521,54 @@ void main() {
     game.playEndless();
     await game.ready();
     expect(game.isDuel, isFalse);
+  });
+
+  testWithGame<StackDuelGame>(
+      'powers: fresh city unlocks only Widen, which restores full width', create,
+      (game) async {
+    await game.ready();
+    expect(game.powerDeck.length, 1, reason: 'fresh city: Widen only');
+    expect(game.powerDeck.single.id, PowerId.widen);
+    expect(game.chargesOf(PowerId.widen), 1);
+    expect(game.powersVisible, isTrue, reason: 'bar shown during a run');
+    final base = _top(game).size.x;
+
+    // Arm Widen, then make an off-centre drop that would normally narrow.
+    expect(game.activatePower(PowerId.widen), isTrue);
+    expect(game.chargesOf(PowerId.widen), 0);
+    expect(game.activatePower(PowerId.widen), isFalse, reason: 'no charge left');
+
+    _moving(game).position.x = _top(game).position.x + 30; // off-centre
+    game.dropBlock();
+    await game.ready();
+    expect(_top(game).size.x, closeTo(base, 0.5),
+        reason: 'Widen snapped the block back to full base width');
+  });
+
+  testWithGame<StackDuelGame>(
+      'powers: a grown city unlocks Perfect, which auto-centres a drop', create,
+      (game) async {
+    // Grow the city so the prestige power unlocks (height >= 150).
+    await cityState.addBuilding(200, 12);
+    game.restart();
+    await game.ready();
+
+    expect(game.powerDeck.length, 3, reason: 'slow-mo + perfect now unlocked');
+    expect(game.powerDeck.map((p) => p.id), contains(PowerId.autocenter));
+
+    // Arm Perfect, then deliberately drop off-centre — it should still be perfect.
+    expect(game.activatePower(PowerId.autocenter), isTrue);
+    _moving(game).position.x = _top(game).position.x + 30; // would miss centre
+    game.dropBlock();
+    await game.ready();
+    expect(scoreState.current, 2, reason: 'auto-centre forced a x2 perfect');
+    expect(haptics.perfectCount, 1);
+
+    // Power bar hides once the run is over.
+    _moving(game).position.x = _top(game).right + 60;
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+    game.dropBlock();
+    await game.ready();
+    expect(game.powersVisible, isFalse, reason: 'no powers after game over');
   });
 }

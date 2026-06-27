@@ -12,6 +12,7 @@ import '../lib/state/characters.dart';
 import '../lib/state/city_math.dart';
 import '../lib/state/daily_seed.dart';
 import '../lib/state/duel.dart';
+import '../lib/state/powers.dart';
 
 int _pass = 0;
 int _fail = 0;
@@ -191,6 +192,22 @@ void main() {
   check('duel: outcome loss', duelOutcome(3, 5) == -1);
   check('duel: result line win',
       duelResultLine('Alex', 10, 5) == 'You beat Alex   10 : 5');
+
+  // 17) Powers (core<->meta loop): unlocked by city progress.
+  check('power: widen always on', unlockedPowers(0, 0, 0).contains(kWiden));
+  check('power: fresh city = only widen', unlockedPowers(0, 0, 0).length == 1);
+  check('power: slow-mo at height 30',
+      unlockedPowers(0, 30, 0).contains(kSlowmo));
+  check('power: slow-mo at 5 buildings',
+      unlockedPowers(5, 0, 0).contains(kSlowmo));
+  check('power: perfect at 4 residents',
+      unlockedPowers(0, 0, 4).contains(kAutocenter));
+  check('power: perfect at metropolis',
+      unlockedPowers(0, 150, 0).contains(kAutocenter));
+  check('power: no perfect early',
+      !unlockedPowers(2, 10, 1).contains(kAutocenter));
+  check('power: full deck of 3 when maxed',
+      unlockedPowers(20, 200, 9).length == 3);
 
   print('\n$_pass passed, $_fail failed');
   if (_fail > 0) {

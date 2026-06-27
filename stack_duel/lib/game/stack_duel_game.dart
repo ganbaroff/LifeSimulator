@@ -12,6 +12,7 @@ import '../state/city_state.dart';
 import '../state/coin_state.dart';
 import '../state/daily_seed.dart';
 import '../state/duel.dart';
+import '../state/powers.dart';
 import '../state/score_state.dart';
 import '../state/skin_state.dart';
 import 'ads.dart';
@@ -142,6 +143,25 @@ class StackDuelGame extends FlameGame {
   /// Original base-block width; the cap for the perfect width-restore.
   late double _baseWidth;
 
+  // --- Powers (the core<->meta loop): abilities unlocked by city progress,
+  // one charge each per run, spent during play. -----------------------------
+  /// True between run start and game over (drives the power bar visibility).
+  bool runActive = false;
+
+  /// Powers available this run + remaining charges.
+  List<Power> _deck = [];
+  final Map<PowerId, int> _charges = {};
+
+  /// Armed/active effects.
+  bool _widenArmed = false;
+  bool _autoCenterArmed = false;
+  double _slowmoTimer = 0;
+
+  List<Power> get powerDeck => _deck;
+  bool get powersVisible => runActive && !isGameOver;
+  int chargesOf(PowerId id) => _charges[id] ?? 0;
+  bool get _slowmoActive => _slowmoTimer > 0;
+
   /// Screen-space gradient backdrop (its colours drift with height).
   late _Background _bg;
 
@@ -252,6 +272,10 @@ class StackDuelGame extends FlameGame {
     // viewport so it covers the screen regardless of camera scroll.
     camera.viewport.add(_TapLayer(this));
 
+    // Power bar sits on top (higher priority) so its buttons get taps before
+    // the drop layer.
+    camera.viewport.add(_PowerBar(this)..priority = 50);
+
     _startNewRun();
   }
 
@@ -269,6 +293,18 @@ class StackDuelGame extends FlameGame {
     _combo = 0;
     _perfectsThisRun = 0;
     scoreState.reset();
+
+    // Build this run's power deck from city progress (collection -> abilities).
+    final residentCount = residentsOf(cityState.buildings).length;
+    _deck = unlockedPowers(
+        cityState.totalBuildings, cityState.totalHeight, residentCount);
+    _charges
+      ..clear()
+      ..addEntries(_deck.map((p) => MapEntry(p.id, 1)));
+    _widenArmed = false;
+    _autoCenterArmed = false;
+    _slowmoTimer = 0;
+    runActive = true;
 
     _centerX = size.x / 2;
 
@@ -415,6 +451,27 @@ class StackDuelGame extends FlameGame {
   // current world-space edges and applies the result.
   // ---------------------------------------------------------------------------
 
+  /// Spend a power (one charge) during a run. Returns true if it fired.
+  bool activatePower(PowerId id) {
+    if (!runActive || isGameOver) return false;
+    if ((_charges[id] ?? 0) <= 0) return false;
+    _charges[id] = _charges[id]! - 1;
+    switch (id) {
+      case PowerId.widen:
+        _widenArmed = true;
+        break;
+      case PowerId.slowmo:
+        _slowmoTimer = 3.0;
+        break;
+      case PowerId.autocenter:
+        _autoCenterArmed = true;
+        break;
+    }
+    haptics.success();
+    analytics.event('power_used', {'id': id.name});
+    return true;
+  }
+
   /// Called when the player taps. Drops the moving block onto the tower.
   void dropBlock() {
     if (isGameOver) return;
@@ -424,6 +481,13 @@ class StackDuelGame extends FlameGame {
     final top = _tower.last;
     final y = moving.position.y;
     moving.moving = false;
+
+    // Perfect power: snap the dropped block dead-centre over the top block.
+    if (_autoCenterArmed) {
+      final topCenterX = (top.left + top.right) / 2;
+      moving.position.x = topCenterX - moving.size.x / 2;
+      _autoCenterArmed = false;
+    }
 
     final result = computeOverlap(
       top.left,
@@ -461,6 +525,12 @@ class StackDuelGame extends FlameGame {
     if (perfect) {
       restWidth = restoredWidth(result.newWidth, _baseWidth, _perfectRestore);
       restLeft = result.newCenterX - restWidth / 2;
+    }
+    // Widen power: this block snaps back to the full base width.
+    if (_widenArmed) {
+      restWidth = _baseWidth;
+      restLeft = result.newCenterX - restWidth / 2;
+      _widenArmed = false;
     }
     final resting = StackBlock(
       position: Vector2(restLeft, y),
@@ -581,6 +651,8 @@ class StackDuelGame extends FlameGame {
     isGameOver = true;
     _dying = true;
     _deathTimer = _gameOverDelay;
+    runActive = false;
+    _slowmoTimer = 0;
     _combo = 0;
     haptics.gameOver();
     sound.gameOver();
@@ -646,6 +718,12 @@ class StackDuelGame extends FlameGame {
       }
       return;
     }
+    // Slow-Mo power: count down + crawl the moving block while active.
+    if (_slowmoTimer > 0) _slowmoTimer -= dt;
+    final moving = _moving;
+    if (moving != null) {
+      moving.speed = _currentSpeed * (_slowmoActive ? 0.4 : 1.0);
+    }
     // Smoothly scroll the camera upward as the tower grows.
     final current = camera.viewfinder.position;
     final target = Vector2(_centerX, _targetCameraY);
@@ -708,6 +786,112 @@ class _TapLayer extends PositionComponent with TapCallbacks {
   @override
   void onTapDown(TapDownEvent event) {
     _game.dropBlock();
+  }
+}
+
+/// On-screen power bar: a row of tappable ability buttons at the bottom. Reads
+/// the run's deck + charges from the game each frame; hidden when not in a run.
+/// Tapping a button spends a charge (and marks the tap handled so it doesn't
+/// also drop a block).
+class _PowerBar extends PositionComponent with TapCallbacks {
+  _PowerBar(this._game);
+
+  final StackDuelGame _game;
+
+  static const double _btn = 60;
+  static const double _gap = 14;
+  static const double _barH = 76;
+
+  final TextPaint _glyphPaint = TextPaint(style: const TextStyle(fontSize: 26));
+  final TextPaint _labelPaint = TextPaint(
+    style: const TextStyle(color: Colors.white, fontSize: 9),
+  );
+  final TextPaint _chargePaint = TextPaint(
+    style: const TextStyle(
+        color: Color(0xFFF1C40F), fontSize: 12, fontWeight: FontWeight.bold),
+  );
+
+  @override
+  Future<void> onLoad() async {
+    size = Vector2(_game.size.x, _barH);
+    position = Vector2(0, _game.size.y - _barH - 8);
+  }
+
+  @override
+  void onGameResize(Vector2 newSize) {
+    super.onGameResize(newSize);
+    size = Vector2(newSize.x, _barH);
+    position = Vector2(0, newSize.y - _barH - 8);
+  }
+
+  /// Button rectangles (local coords) paired with their power, centred in the bar.
+  List<MapEntry<Rect, Power>> _layout() {
+    final deck = _game.powerDeck;
+    if (deck.isEmpty) return const [];
+    final totalW = deck.length * _btn + (deck.length - 1) * _gap;
+    var x = (size.x - totalW) / 2;
+    final y = (size.y - _btn) / 2;
+    final out = <MapEntry<Rect, Power>>[];
+    for (final p in deck) {
+      out.add(MapEntry(Rect.fromLTWH(x, y, _btn, _btn), p));
+      x += _btn + _gap;
+    }
+    return out;
+  }
+
+  @override
+  void render(Canvas canvas) {
+    if (!_game.powersVisible) return;
+    for (final e in _layout()) {
+      final rect = e.key;
+      final power = e.value;
+      final charges = _game.chargesOf(power.id);
+      final enabled = charges > 0;
+      final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(12));
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = enabled ? const Color(0xCC1B2A3A) : const Color(0x55121820),
+      );
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = enabled ? const Color(0xFF3498DB) : const Color(0x33FFFFFF),
+      );
+      final center = rect.center;
+      _glyphPaint.render(
+        canvas,
+        power.glyph,
+        Vector2(center.dx, rect.top + 22),
+        anchor: Anchor.center,
+      );
+      _labelPaint.render(
+        canvas,
+        power.name,
+        Vector2(center.dx, rect.bottom - 14),
+        anchor: Anchor.center,
+      );
+      _chargePaint.render(
+        canvas,
+        '×$charges',
+        Vector2(rect.right - 6, rect.top + 6),
+        anchor: Anchor.topRight,
+      );
+    }
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    if (!_game.powersVisible) return;
+    final p = event.localPosition;
+    for (final e in _layout()) {
+      if (e.key.contains(Offset(p.x, p.y))) {
+        if (_game.activatePower(e.value.id)) event.handled = true;
+        return;
+      }
+    }
   }
 }
 
