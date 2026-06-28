@@ -140,11 +140,49 @@ Locked defaults (owner: "решай сам"): client-only launch + ONE server fe
   Then share the link to 20–50 people, measure D1 now / D7 in a week → GATE
   (D7 ≥ ~10–15% → invest; else fix core / re-pick, keep the pipeline).
   Blocked-in-sandbox notes: PostHog/Supabase MCP *write*/approval streams fail
-  here (reads work); posthog.com is egress-blocked. So the two config pastes are
-  owner-side. All code is shipped + green (81 pure + 51 flutter; web build clean).
+  here (reads work); posthog.com is egress-blocked.
+
+## LAUNCH CONFIG — ALL RESOLVED (build 1.12.0+30)
+- PostHog **phc_ key SET** in web/index.html: `phc_se8LwdYnuhw7pzxfQZRCVGG3gr8EcDKsQGEg8dUAKYsi`
+  (public write-only project token; analytics live). Note: posthog.init uses
+  `person_profiles:"identified_only"` and NO identify() yet → see AUDIT C1.
+- Supabase leaderboard table **CREATED**: `public.stack_scores` in project
+  `dwdgzfusjsobnixgyzjk` (Volaura), RLS on, public read + sanity-checked insert.
+  URL+publishable key embedded in index.html. (MCP write worked on retry.)
+- **BotFather Mini App is LIVE** — game opens in Telegram (owner confirmed the
+  leaderboard overlay rendering inside TG). Owner uploaded a 640×360 preview.
+- **Brand unified to "Stack City"** (title/manifest/splash) — EXCEPT the share
+  card header still says "Stack Duel" (AUDIT H8).
+
+## PRE-LAUNCH AUDIT PHASE (current — owner: "2 sprints: 1 audit, 2 fix")
+- **Sprint 1 (AUDIT) — DONE.** `stack_duel/AUDIT.md` (commit 08a5e51) by 3
+  independent read-only auditors + maintainer. **Verdict: DO NOT LAUNCH AS-IS.**
+  Feel is good; the problem is funnel + re-engagement + measurement. Realistic
+  **D7 ~5–9%** as shipped (below the 10% floor); ~10–14% with fixes.
+  4 CRITICAL: (C1) retention unmeasurable — `identified_only` + no `identify()` +
+  anon localStorage resets in TG WebView; (C2) viral loop behind the secondary
+  button (Play=endless=no share/leaderboard); (C3) no referral/start_param loop;
+  (C4) CanvasKit ~7MB from gstatic CDN → slow first load (add `--no-web-resources-
+  cdn`). + 11 HIGH (leaderboard spoof/dedup/no-stable-id, no crash reporting,
+  first_perfect per-run, meta not sold first session, streak no reward, no
+  bot=no push, brand leak in share card, 2 overlays untested, power bar no
+  affordance). Secrets/parsing/tap-routing/overflow verified OK.
+- AUDIT.md handed to **Antigravity** (another AI) for a READ-ONLY verification
+  pass (confirm/refute/extend, change nothing). This instance answered its
+  orientation Qs: repo `ganbaroff/lifesimulator` branch
+  `claude/stack-duel-flutter-game-dv0n5r` folder `stack_duel/`; role = read-only
+  QA only; no custom backend (client + Supabase/PostHog/Telegram APIs); brand
+  leak = the in-app share-card TEXT header, not OG meta.
 
 ## Next action (post-compact resume)
-1. Re-read this file + HANDOFF.md (§15 build log = latest state).
+0. **WAITING on:** Antigravity's read-only verified audit → owner approves
+   priorities → THEN this (dev) instance does **Sprint 2 (FIX)** in this order:
+   C1 `identify()` by Telegram user id → C2/C3 route social loop to primary path +
+   referral reward → C4 `--no-web-resources-cdn` → H8 brand in share card / H4 true
+   funnel event / H3 crash reporting / H6 streak rewards+visibility / H9 the 2
+   render tests → H1/H2 leaderboard integrity (tg_user_id + dedupe) → H5/H7 meta
+   first-session + bot push → MEDIUM/LOW. Do NOT start fixing until owner approves.
+1. Re-read this file + HANDOFF.md (§15 build log = latest state) + AUDIT.md.
 2. **P1 (City meta MVP) SHIPPED** (8e10211, build 1.1.0+16): `city_math.dart`
    (pure) + `city_state.dart` (persisted) + `_endRun()` adds a building + City
    overlay with View City buttons. Also added a service-worker auto-reload to
