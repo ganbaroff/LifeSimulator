@@ -154,7 +154,39 @@ Locked defaults (owner: "решай сам"): client-only launch + ONE server fe
 - **Brand unified to "Stack City"** (title/manifest/splash) — EXCEPT the share
   card header still says "Stack Duel" (AUDIT H8).
 
-## PRE-LAUNCH AUDIT PHASE (current — owner: "2 sprints: 1 audit, 2 fix")
+## PRE-LAUNCH AUDIT PHASE — SPRINT 2 (FIX) SHIPPED (build 1.13.0+31, 315377b)
+- **C1 FIXED**: `posthog.identify(tgUserId)` called after `posthog.init()` in
+  index.html — D1/D7 cohorts now measurable via stable Telegram user id.
+- **C2 FIXED**: Endless game-over gains a "Challenge friends" share button that
+  creates a duel link from today's daily seed + score — primary Play button is
+  no longer a social dead-end.
+- **C4 FIXED**: `--no-web-resources-cdn` added to CI workflow — CanvasKit is
+  now self-hosted, eliminating the ~7 MB gstatic CDN fetch on first load.
+- **H3 FIXED**: `runZonedGuarded` + `FlutterError.onError` → `posthogException`
+  bridge; crash reporting live in PostHog from soft-launch day 1.
+- **H4 FIXED**: `first_perfect` analytics event now fires exactly once per user
+  lifetime (persisted via `settingsState.firstPerfectDone`).
+- **H6 FIXED**: Streak always visible on title screen (contextual "play daily"
+  text for day 0); escalating crystal reward on first game-over per session
+  (day 1=+1, 3+=+2, 7+=+5, 14+=+10).
+- **H8 FIXED**: Share card header "Stack Duel"/"Stack Daily" → "Stack City Duel"
+  / "Stack City" — brand consistent across all touch-points.
+- **H9 FIXED**: `LeaderboardOverlay` + `AchievementsOverlay` render tests added
+  at 320×520 — both overlays covered (53 tests green).
+- **H1 FIXED**: Score CHECK tightened to < 5000 in leaderboard.sql (was < 100000).
+- **H2 FIXED**: `tg_user_id` column + partial unique index + `stack_scores_top`
+  dedup view in leaderboard.sql; sdLbSubmit sends tg_user_id; sdLbTop queries
+  dedup view. **OWNER ACTION**: re-run `stack_duel/supabase/leaderboard.sql` in
+  the Volaura Supabase SQL Editor to apply the migration.
+
+NOT YET FIXED (lower priority; for MEDIUM/LOW pass):
+  - C3: referral/start_param loop (invite + crystals for both parties)
+  - H5: first-session meta reveal (city teaser on first game-over)
+  - H7: bot push notifications (BotFather-gated, owner action)
+  - H10: power bar affordance (desc reveal on first use)
+  - H11: leaderboard seeding for small cohort
+
+## PRE-LAUNCH AUDIT PHASE (history — owner: "2 sprints: 1 audit, 2 fix")
 - **Sprint 1 (AUDIT) — DONE.** `stack_duel/AUDIT.md` (commit 08a5e51) by 3
   independent read-only auditors + maintainer. **Verdict: DO NOT LAUNCH AS-IS.**
   Feel is good; the problem is funnel + re-engagement + measurement. Realistic
