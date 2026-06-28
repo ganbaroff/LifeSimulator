@@ -283,11 +283,15 @@ void main() {
     await game.ready();
     expect(scoreState.current, 0, reason: 'tap is debounced while dying');
 
-    // After the delay (0.6s) the overlay appears.
-    _pump(game, 45); // 0.75s > _gameOverDelay
-    await game.ready();
+    // After the death delay AND the async finalize, the overlay appears.
+    // Interleave pumping with awaits so the timer counts down and the async
+    // end-of-run finalize both complete.
+    for (var i = 0; i < 60 && !game.overlays.isActive('gameOver'); i++) {
+      _pump(game, 5);
+      await game.ready();
+    }
     expect(game.overlays.isActive('gameOver'), isTrue,
-        reason: 'overlay appears after the death delay');
+        reason: 'overlay appears after the death delay + finalize');
   });
 
   testWithGame<StackDuelGame>('3: restart resets to a single base block', create,
@@ -635,5 +639,44 @@ void main() {
     expect(game.crystalState.total, 10 - cost, reason: 'crystals spent');
     expect(game.isGameOver, isFalse, reason: 'run continues');
     expect(game.runActive, isTrue);
+  });
+
+  testWithGame<StackDuelGame>(
+      'revive: the run gets full credit (coins + taller building) after reviving',
+      create, (game) async {
+    await crystalState.add(10);
+    await game.ready();
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+
+    // Segment 1: three perfects, then a miss (first death).
+    for (var i = 0; i < 3; i++) {
+      _moving(game).position.x = _top(game).position.x;
+      game.dropBlock();
+      await game.ready();
+    }
+    _moving(game).position.x = _top(game).right + 80;
+    game.dropBlock();
+    await game.ready();
+    expect(coinState.total, 3, reason: 'first death banks 3 perfect-coins');
+    expect(cityState.totalBuildings, 1);
+    final firstHeight = cityState.buildings.single.height;
+
+    // Revive and climb further: three more perfects, then the final miss.
+    expect(await game.revive(), isTrue);
+    await game.ready(); // let the revived moving block mount
+    for (var i = 0; i < 3; i++) {
+      _moving(game).position.x = _top(game).position.x;
+      game.dropBlock();
+      await game.ready();
+    }
+    _moving(game).position.x = _top(game).right + 80;
+    game.dropBlock();
+    await game.ready();
+
+    // The run is credited for ALL of it: 6 coins, ONE building, taller than before.
+    expect(coinState.total, 6, reason: 'delta coins topped up after revive');
+    expect(cityState.totalBuildings, 1, reason: 'still one building for the run');
+    expect(cityState.buildings.single.height, greaterThan(firstHeight),
+        reason: 'building grew to the final tower height');
   });
 }

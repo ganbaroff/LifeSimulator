@@ -180,8 +180,16 @@ class StackDuelGame extends FlameGame {
   /// Whether any power was used this run (achievement).
   bool _usedPowerThisRun = false;
 
-  /// Guards once-per-run economy (coins + city building) across revives.
+  /// Guards once-per-run economy (the city building + ad cadence) across revives.
   bool _finalizedThisRun = false;
+
+  /// Perfects already paid out as coins this run (so a revived run only tops up
+  /// the delta instead of double-paying).
+  int _coinsPaidThisRun = 0;
+
+  /// Set once the async end-of-run finalize has completed; the game-over overlay
+  /// waits for this so it never renders with stale economy / missing toasts.
+  bool _finalizeComplete = false;
 
   /// Times revived this run (revive cost scales with it).
   int _reviveCount = 0;
@@ -350,6 +358,8 @@ class StackDuelGame extends FlameGame {
     _bestComboThisRun = 0;
     _usedPowerThisRun = false;
     _finalizedThisRun = false;
+    _coinsPaidThisRun = 0;
+    _finalizeComplete = false;
     _reviveCount = 0;
     _movingGolden = false;
     lastUnlocked = [];
@@ -755,6 +765,7 @@ class StackDuelGame extends FlameGame {
     isGameOver = true;
     _dying = true;
     _deathTimer = _gameOverDelay;
+    _finalizeComplete = false;
     runActive = false;
     _slowmoTimer = 0;
     _combo = 0;
@@ -767,10 +778,11 @@ class StackDuelGame extends FlameGame {
       'blocks': _tower.length,
     });
 
-    // Once-per-run economy (guarded so a revived run isn't double-counted):
-    // coins from perfects + a city building + the interstitial cadence.
     if (!_finalizedThisRun) {
+      // First death of the run: bank coins, add the city building, run the
+      // interstitial cadence (once per run, even across revives).
       _finalizedThisRun = true;
+      _coinsPaidThisRun = _perfectsThisRun;
       if (_perfectsThisRun > 0) {
         coinState.add(_perfectsThisRun);
         analytics.event('coins_earned', {'coins': _perfectsThisRun});
@@ -787,6 +799,15 @@ class StackDuelGame extends FlameGame {
         'tier': building.tier,
         'city_level': cityState.cityLevel,
       });
+    } else {
+      // The run continued past its first death (revive): top up coins for the
+      // new perfects and grow the building to reflect the FINAL, taller tower.
+      final delta = _perfectsThisRun - _coinsPaidThisRun;
+      if (delta > 0) {
+        coinState.add(delta);
+        _coinsPaidThisRun = _perfectsThisRun;
+      }
+      await cityState.replaceLast(_tower.length, _perfectsThisRun);
     }
 
     // Goals re-evaluate every death (recordEarned dedups; pays crystals).
@@ -794,6 +815,7 @@ class StackDuelGame extends FlameGame {
     await streakState.recordPlay(_todayEpochDay());
     await scoreState.maybeUpdateBest();
     _updateHud();
+    _finalizeComplete = true; // overlay may now show with correct data
   }
 
   int _todayEpochDay() {
@@ -860,7 +882,9 @@ class StackDuelGame extends FlameGame {
     if (isGameOver) {
       if (_dying) {
         _deathTimer -= dt;
-        if (_deathTimer <= 0) {
+        // Wait for BOTH the death animation AND the async finalize, so the
+        // overlay never shows stale economy / a missing achievement toast.
+        if (_deathTimer <= 0 && _finalizeComplete) {
           _dying = false;
           overlays.add('gameOver');
           pauseEngine();
@@ -1036,10 +1060,13 @@ class _PowerBar extends PositionComponent with TapCallbacks {
   @override
   void onTapDown(TapDownEvent event) {
     if (!_game.powersVisible) return;
+    // Flame stops tap propagation at the top-most component (this bar) by
+    // default, so a tap that lands here never also drops a block — whether or
+    // not it hits a button or the button has charge.
     final p = event.localPosition;
     for (final e in _layout()) {
       if (e.key.contains(Offset(p.x, p.y))) {
-        if (_game.activatePower(e.value.id)) event.handled = true;
+        _game.activatePower(e.value.id);
         return;
       }
     }

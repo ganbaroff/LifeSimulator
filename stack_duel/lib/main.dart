@@ -129,11 +129,17 @@ class StartOverlay extends StatelessWidget {
           colors: [Color(0xFF243B55), Color(0xFF0A0E15)],
         ),
       ),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Three stacked bars echoing the game's tower (slightly offset).
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Three stacked bars echoing the game's tower (slightly offset).
           Container(width: 120, height: 26, color: const Color(0xFFE74C3C)),
           Container(
             width: 150,
@@ -260,7 +266,11 @@ class StartOverlay extends StatelessWidget {
               ),
             ),
           ),
-        ],
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       ),
     );
@@ -306,15 +316,22 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
   Widget build(BuildContext context) {
     final skins = game.skinState;
     return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-        decoration: BoxDecoration(
-          color: const Color(0xFF11161E),
-          borderRadius: BorderRadius.circular(16),
+      child: ConstrainedBox(
+        // Cap the card height so a tall result (many achievement toasts + revive
+        // + skins) scrolls inside the card instead of overflowing the screen.
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.92,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+          decoration: BoxDecoration(
+            color: const Color(0xFF11161E),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             Text(
               game.isDuel
                   ? 'Duel Done'
@@ -403,8 +420,10 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
               ],
             ),
             const SizedBox(height: 22),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
               children: [
                 if (game.isDaily || game.isDuel)
                   OutlinedButton.icon(
@@ -431,7 +450,6 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
                     child: Text('View City  (${game.cityState.totalBuildings})',
                         style: const TextStyle(fontSize: 16)),
                   ),
-                const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: game.restart,
                   style: ElevatedButton.styleFrom(
@@ -451,7 +469,9 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
               child: const Text('Home',
                   style: TextStyle(color: Colors.white54, fontSize: 14)),
             ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

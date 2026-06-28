@@ -43,10 +43,22 @@ class CityState {
   Future<Building> addBuilding(int blocks, int perfects) async {
     final building = Building(blocks, buildingTier(perfects));
     buildings.add(building);
+    await _persist();
+    return building;
+  }
+
+  /// Replaces the most recent building (used when a run continues past its
+  /// first death via revive, so the building reflects the FINAL tower).
+  Future<void> replaceLast(int blocks, int perfects) async {
+    if (buildings.isEmpty) return;
+    buildings[buildings.length - 1] = Building(blocks, buildingTier(perfects));
+    await _persist();
+  }
+
+  Future<void> _persist() async {
     await _prefs?.setStringList(
       _key,
       buildings.map((b) => '${b.height}:${b.tier}').toList(),
     );
-    return building;
   }
 }
