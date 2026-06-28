@@ -147,9 +147,9 @@ class CityOverlay extends StatelessWidget {
   }
 }
 
-/// Horizontally scrollable row of buildings, sitting on a ground line. Newest
-/// building is highlighted; pixel-height scales with block height; colour +
-/// detail encode the quality tier.
+/// The skyline: buildings sit on a ground line, sized by a perceptual sqrt scale
+/// so heights read clearly. A small city is centred; a big one scrolls with the
+/// newest building kept in view.
 class _Skyline extends StatelessWidget {
   const _Skyline({
     required this.buildings,
@@ -163,90 +163,104 @@ class _Skyline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      reverse: true, // keep the newest building in view
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: groundColor, width: 3)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            for (var i = 0; i < buildings.length; i++)
-              _BuildingBar(
-                building: buildings[i],
-                color: tierColors[buildings[i].tier.clamp(0, 4)],
-                isNewest: i == buildings.length - 1,
-                resident: residentFor(buildings[i].tier, i),
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Reserve room for the resident glyph + roof + the number label.
+        final maxPx = (c.maxHeight - 60).clamp(60.0, 320.0);
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          reverse: true, // newest stays in view when the skyline overflows
+          child: ConstrainedBox(
+            // Fill the width so a small city is centred, not jammed to one side.
+            constraints: BoxConstraints(minWidth: c.maxWidth),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              decoration: BoxDecoration(
+                border:
+                    Border(bottom: BorderSide(color: groundColor, width: 3)),
               ),
-          ],
-        ),
-      ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (var i = 0; i < buildings.length; i++)
+                    _BuildingBar(
+                      building: buildings[i],
+                      color: tierColors[buildings[i].tier.clamp(0, 4)],
+                      isNewest: i == buildings.length - 1,
+                      resident: residentFor(buildings[i].tier, i),
+                      maxPx: maxPx,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-/// One building: a flat tower whose height is its block count, with lit windows
-/// and — at the top tier — a spire. Higher tiers light up gold. The newest gets
-/// a subtle outline so a fresh run is easy to spot.
+/// One building: a tower whose height uses the perceptual scale, with evenly
+/// spaced lit "floors", a top-light gradient for depth, a spire on the top tier,
+/// and a glow on the newest. Width grows a little with tier so skyscrapers read
+/// as grander.
 class _BuildingBar extends StatelessWidget {
   const _BuildingBar({
     required this.building,
     required this.color,
     required this.isNewest,
     required this.resident,
+    required this.maxPx,
   });
 
   final Building building;
   final Color color;
   final bool isNewest;
   final Character resident;
+  final double maxPx;
 
   @override
   Widget build(BuildContext context) {
-    // 1 block ~= 9 px tall, clamped so tiny and huge towers both stay on screen.
-    final h = (building.height * 9.0).clamp(16.0, 340.0);
     final tier = building.tier.clamp(0, 4);
-    final windowRows = (h / 18).floor().clamp(0, 16);
+    final h = cityBuildingHeightPx(building.height, maxPx: maxPx);
+    final width = 26.0 + tier * 2.5; // grander towers for higher tiers
+    final floors = (h / 22).floor().clamp(1, 14);
     final windowColor =
-        tier >= 3 ? const Color(0xCCF1C40F) : Colors.white30;
+        tier >= 3 ? const Color(0xFFFFE082) : const Color(0x66FFFFFF);
+    final topColor = Color.lerp(color, Colors.white, 0.16) ?? color;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 2.5),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // The building's resident, peeking over the roof.
-          Text(resident.glyph, style: const TextStyle(fontSize: 16)),
-          // Spire on the top tier (Skyscraper) — the "evolved" silhouette.
+          Text(resident.glyph, style: const TextStyle(fontSize: 15)),
           if (tier >= 4)
-            Container(width: 3, height: 14, color: Colors.white70),
+            Container(width: 3, height: 12, color: Colors.white70),
           Container(
-            width: 26,
+            width: width,
             height: h,
-            // borderRadius requires a UNIFORM border in Flutter, so the roof is
-            // drawn as an inner strip and the "newest" highlight as a glow —
-            // never as a per-side border (which throws at paint time).
             decoration: BoxDecoration(
-              color: color,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [topColor, color],
+              ),
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(3)),
+                  const BorderRadius.vertical(top: Radius.circular(4)),
               boxShadow: isNewest
                   ? const [
                       BoxShadow(
-                        color: Colors.white70,
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      ),
+                          color: Colors.white70,
+                          blurRadius: 9,
+                          spreadRadius: 1),
                     ]
                   : null,
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
-                // Roof cap.
                 Container(
                   height: 3,
                   width: double.infinity,
@@ -255,22 +269,19 @@ class _BuildingBar extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding:
-                        const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+                        const EdgeInsets.symmetric(vertical: 6, horizontal: 5),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        for (var r = 0; r < windowRows; r++)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                    width: 5, height: 5, color: windowColor),
-                                Container(
-                                    width: 5, height: 5, color: windowColor),
-                              ],
-                            ),
+                        for (var r = 0; r < floors; r++)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                  width: 4, height: 4, color: windowColor),
+                              Container(
+                                  width: 4, height: 4, color: windowColor),
+                            ],
                           ),
                       ],
                     ),
@@ -282,7 +293,7 @@ class _BuildingBar extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             '${building.height}',
-            style: const TextStyle(color: Colors.white38, fontSize: 10),
+            style: const TextStyle(color: Colors.white24, fontSize: 9),
           ),
         ],
       ),

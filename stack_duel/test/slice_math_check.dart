@@ -123,6 +123,16 @@ void main() {
   check('era: height 149 -> Modern', cityEra(149).name == 'Modern');
   check('era: height 150 -> Neon', cityEra(150).name == 'Neon');
 
+  // 12b) Building pixel-height: perceptual sqrt scale, monotonic + capped.
+  check('bldg px: 1 block -> 54', near(cityBuildingHeightPx(1), 54));
+  check('bldg px: taller blocks read taller (3<9<58)',
+      cityBuildingHeightPx(3) < cityBuildingHeightPx(9) &&
+          cityBuildingHeightPx(9) < cityBuildingHeightPx(58));
+  check('bldg px: 58 vs 115 still distinct (no flat cap at default)',
+      cityBuildingHeightPx(58, maxPx: 400) <
+          cityBuildingHeightPx(115, maxPx: 400));
+  check('bldg px: capped at maxPx', cityBuildingHeightPx(99999) == 300);
+
   // 13) Residents (P3): better buildings draw rarer residents; collection dedupes.
   check('resident: tier 0 -> common', residentFor(0, 0).rarity == 0);
   check('resident: tier 1 -> common', residentFor(1, 0).rarity == 0);

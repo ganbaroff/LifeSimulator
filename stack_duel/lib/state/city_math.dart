@@ -8,6 +8,8 @@
 //
 // CityState (persistence) imports these; the game and overlays consume them.
 
+import 'dart:math' as math;
+
 /// A single building in the persistent city, produced by one completed run.
 class Building {
   const Building(this.height, this.tier);
@@ -106,6 +108,16 @@ const List<CityEra> kCityEras = [
   CityEra(70, 'Modern', 0xFF2C2150, 0xFF0A0814, 0xFF40346B),
   CityEra(150, 'Neon', 0xFF0B132B, 0xFF000000, 0xFF1C2541),
 ];
+
+/// Perceptual on-screen height (px) for a building of [blocks] blocks, capped at
+/// [maxPx]. A sqrt curve keeps a 3-block shack and a 120-block tower BOTH
+/// readable and distinct — instead of every tall run slamming into a flat cap
+/// (the old `blocks * 9` clamp made 58/89/115 look identical). Pure + testable.
+double cityBuildingHeightPx(int blocks, {double maxPx = 300}) {
+  final b = blocks < 1 ? 1 : blocks;
+  final px = 28 + math.sqrt(b) * 26;
+  return px > maxPx ? maxPx : px;
+}
 
 /// Visual era for a cumulative built [totalHeight].
 CityEra cityEra(int totalHeight) {
