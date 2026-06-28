@@ -42,6 +42,36 @@
       } catch (e) {}
       return false;
     };
+
+    // Supabase daily leaderboard (Sprint 4). URL + publishable key are PUBLIC
+    // (client-side by design; security is enforced by row-level security).
+    // Requires the `stack_scores` table (see stack_duel/supabase/leaderboard.sql).
+    window.SUPA_URL = "https://dwdgzfusjsobnixgyzjk.supabase.co";
+    window.SUPA_KEY = "sb_publishable_lVUcn3G29V449ltPzCJF4g_ID5G3Ud9";
+    window.sdLbSubmit = function (seed, name, score, height) {
+      try {
+        if (!window.SUPA_URL) return;
+        fetch(window.SUPA_URL + "/rest/v1/stack_scores", {
+          method: "POST",
+          headers: {
+            "apikey": window.SUPA_KEY,
+            "Authorization": "Bearer " + window.SUPA_KEY,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
+          body: JSON.stringify({ seed: seed, name: name, score: score, height: height })
+        }).catch(function () {});
+      } catch (e) {}
+    };
+    window.sdLbTop = function (seed) {
+      try {
+        if (!window.SUPA_URL) return Promise.resolve("[]");
+        return fetch(window.SUPA_URL + "/rest/v1/stack_scores?seed=eq." + seed +
+          "&order=score.desc&limit=50&select=name,score,height", {
+          headers: { "apikey": window.SUPA_KEY, "Authorization": "Bearer " + window.SUPA_KEY }
+        }).then(function (r) { return r.text(); }).catch(function () { return "[]"; });
+      } catch (e) { return Promise.resolve("[]"); }
+    };
   </script>
 
   <!-- PostHog product analytics (Sprint 2). The key below is a PUBLIC, write-only

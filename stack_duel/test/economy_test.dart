@@ -11,6 +11,7 @@ import 'package:stack_duel/state/city_math.dart';
 import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/crystal_state.dart';
+import 'package:stack_duel/state/leaderboard.dart';
 import 'package:stack_duel/state/skin_state.dart';
 import 'package:stack_duel/state/streak_state.dart';
 
@@ -196,6 +197,19 @@ void main() {
     expect(s.best, 3);
     expect(await s.recordPlay(d + 5), 1, reason: 'missed days reset');
     expect(s.best, 3, reason: 'best preserved');
+  });
+
+  test('leaderboard: parses PostgREST rows + survives junk (Sprint 4)', () {
+    final rows = parseLeaderboard(
+        '[{"name":"Yusif","score":219,"height":89},{"name":"","score":10,"height":3}]');
+    expect(rows.length, 2);
+    expect(rows.first.name, 'Yusif');
+    expect(rows.first.score, 219);
+    expect(rows.first.height, 89);
+    expect(parseLeaderboard('not json'), isEmpty);
+    expect(parseLeaderboard('{"error":"x"}'), isEmpty, reason: 'not a list');
+    expect(parseLeaderboard('[{"name":"A"}]').first.score, 0,
+        reason: 'missing fields default to 0');
   });
 
   test('city: era advances with cumulative height (P2)', () {

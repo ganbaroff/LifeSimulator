@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'game/achievements_overlay.dart';
 import 'game/analytics_posthog.dart';
 import 'game/city_overlay.dart';
+import 'game/leaderboard_overlay.dart';
 import 'game/stack_duel_game.dart';
 import 'game/telegram_bridge.dart';
 import 'state/achievements.dart';
@@ -109,6 +110,7 @@ class StackDuelApp extends StatelessWidget {
             'gameOver': (context, game) => GameOverOverlay(game: game),
             'city': (context, game) => CityOverlay(game: game),
             'achievements': (context, game) => AchievementsOverlay(game: game),
+            'leaderboard': (context, game) => LeaderboardOverlay(game: game),
           },
         ),
       ),
@@ -264,6 +266,18 @@ class StartOverlay extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: () => game.overlays.add('leaderboard'),
+            child: const Text(
+              '🥇 Daily Leaderboard',
+              style: TextStyle(
+                color: Color(0xFF3498DB),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
           const SizedBox(height: 14),
           GestureDetector(
             onTap: () => game.overlays.add('achievements'),
@@ -474,6 +488,18 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
                     ),
                     child: Text('View City  (${game.cityState.totalBuildings})',
                         style: const TextStyle(fontSize: 16)),
+                  ),
+                if (game.isDaily && !game.isDuel)
+                  OutlinedButton(
+                    onPressed: () => game.overlays.add('leaderboard'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF3498DB)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                    ),
+                    child: const Text('🥇 Ranks',
+                        style: TextStyle(fontSize: 16)),
                   ),
                 ElevatedButton(
                   onPressed: game.restart,

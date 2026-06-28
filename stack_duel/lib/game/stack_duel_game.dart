@@ -14,6 +14,7 @@ import '../state/coin_state.dart';
 import '../state/crystal_state.dart';
 import '../state/daily_seed.dart';
 import '../state/duel.dart';
+import '../state/leaderboard.dart';
 import '../state/powers.dart';
 import '../state/score_state.dart';
 import '../state/settings_state.dart';
@@ -859,6 +860,15 @@ class StackDuelGame extends FlameGame {
     await _evaluateAchievements();
     await streakState.recordPlay(_todayEpochDay());
     await scoreState.maybeUpdateBest();
+
+    // Daily Challenge runs post to the shared leaderboard (not duels — they use
+    // the challenger's seed). Fire-and-forget; no-op off web / if unreachable.
+    if (isDaily && !isDuel) {
+      submitScore(activeDaily!.seed,
+          playerName.isEmpty ? 'Player' : playerName, scoreState.current,
+          _tower.length);
+    }
+
     _updateHud();
     _finalizeComplete = true; // overlay may now show with correct data
   }
