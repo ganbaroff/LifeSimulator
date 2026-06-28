@@ -116,10 +116,18 @@ Locked defaults (owner: "решай сам"): client-only launch + ONE server fe
   1.8.0+24): `settings_state.dart` (tutorialDone+muted); first-ever run crawls the
   first blocks for an easy early perfect + HUD hints; mute toggle; SFX gated.
   77 pure + 48 flutter green.
-- Sprint 2 = PostHog analytics (real impl behind the Analytics seam) → D1/D7 +
-  funnel, so the gate is measurable. Sprint 3 = Telegram-native (SDK identity +
-  t.me/share). Sprint 4 = Supabase daily leaderboard + balance. Sprint 5 =
-  BotFather publish + soft-launch to 20–50 people + measure D7 → gate decision.
+- **Sprint 2 (PostHog analytics) — SHIPPED** (5f31cc3, build 1.9.0+25):
+  PostHogAnalytics behind the Analytics seam + platform-split js_interop bridge
+  (posthog_bridge_web/stub, conditional import); index.html posthog snippet +
+  window.sdTrack guard. Funnel instrumented (app_open/first_perfect/tutorial_done/
+  game_over{score,height,perfects,mode,revives}/achievement_unlock/share). 77 +
+  49 green; `flutter build web` clean. **OWNER 1-LINE SETUP:** paste the public
+  phc_ Project API key into `window.POSTHOG_KEY` in web/index.html → events flow.
+  Then build D1/D7 + funnel dashboards via PostHog MCP (schema-first, after events
+  exist).
+- Sprint 3 = Telegram-native (SDK identity → real duel names + t.me/share native
+  share). Sprint 4 = Supabase daily leaderboard + balance. Sprint 5 = BotFather
+  publish + soft-launch to 20–50 people + measure D7 → gate decision.
 
 ## Next action (post-compact resume)
 1. Re-read this file + HANDOFF.md (§15 build log = latest state).
