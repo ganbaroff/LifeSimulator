@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'game/achievements_overlay.dart';
+import 'game/analytics_posthog.dart';
 import 'game/city_overlay.dart';
 import 'game/stack_duel_game.dart';
 import 'state/achievements.dart';
@@ -91,6 +92,7 @@ class StackDuelApp extends StatelessWidget {
       achievementState: achievementState,
       streakState: streakState,
       settingsState: settingsState,
+      analytics: const PostHogAnalytics(),
     );
 
     return MaterialApp(
@@ -320,6 +322,7 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
   }
 
   Future<void> _shareDaily() async {
+    game.analytics.event('share', {'mode': game.isDuel ? 'duel' : 'daily'});
     await Clipboard.setData(ClipboardData(text: game.dailyShareCard()));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

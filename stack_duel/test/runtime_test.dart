@@ -24,6 +24,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:stack_duel/game/ads.dart';
+import 'package:stack_duel/game/analytics.dart';
 import 'package:stack_duel/game/falling_piece.dart';
 import 'package:stack_duel/game/haptics.dart';
 import 'package:stack_duel/game/sound.dart';
@@ -47,6 +48,18 @@ class FakeAds implements Ads {
 
   @override
   void showInterstitial() => interstitialCount++;
+}
+
+/// Records analytics events so tests can assert the funnel is instrumented.
+class FakeAnalytics implements Analytics {
+  final List<String> events = [];
+  final Map<String, Map<String, Object?>> last = {};
+
+  @override
+  void event(String name, [Map<String, Object?> params = const {}]) {
+    events.add(name);
+    last[name] = params;
+  }
 }
 
 /// Counts sound calls (no real audio in headless tests).
@@ -122,6 +135,7 @@ void main() {
   late FakeHaptics haptics;
   late FakeSound sound;
   late FakeAds ads;
+  late FakeAnalytics analytics;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -144,6 +158,7 @@ void main() {
     haptics = FakeHaptics();
     sound = FakeSound();
     ads = FakeAds();
+    analytics = FakeAnalytics();
   });
 
   StackDuelGame create() => StackDuelGame(
@@ -158,6 +173,7 @@ void main() {
         haptics: haptics,
         sound: sound,
         ads: ads,
+        analytics: analytics,
       );
 
   testWithGame<StackDuelGame>('boots with a base + one moving block', create,
@@ -703,6 +719,28 @@ void main() {
     game.dropBlock();
     await game.ready();
     expect(settingsState.tutorialDone, isTrue);
+  });
+
+  testWithGame<StackDuelGame>(
+      'analytics: the funnel events fire with props (Sprint 2)', create,
+      (game) async {
+    await game.ready();
+    expect(analytics.events, contains('app_open'));
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+
+    _moving(game).position.x = _top(game).position.x; // perfect
+    game.dropBlock();
+    await game.ready();
+    expect(analytics.events, contains('first_perfect'));
+
+    _moving(game).position.x = _top(game).right + 80; // miss -> run ends
+    game.dropBlock();
+    await game.ready();
+    expect(analytics.events, contains('game_over'));
+    expect(analytics.last['game_over']!['mode'], 'endless');
+    expect(analytics.last['game_over']!.containsKey('perfects'), isTrue);
+    expect(analytics.events, contains('tutorial_done'),
+        reason: 'first-ever run reports tutorial_done');
   });
 
   testWithGame<StackDuelGame>(

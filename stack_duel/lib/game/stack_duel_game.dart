@@ -277,9 +277,13 @@ class StackDuelGame extends FlameGame {
   @override
   Color backgroundColor() => const Color(0xFF1B2430);
 
+  /// Current mode label for analytics (endless / daily / duel).
+  String get _mode => isDuel ? 'duel' : (isDaily ? 'daily' : 'endless');
+
   @override
   Future<void> onLoad() async {
     await sound.preload();
+    analytics.event('app_open');
 
     // Add the gradient backdrop at GAME level behind the camera, not in the
     // viewport — a viewport child renders ON TOP of the world and would hide the
@@ -662,6 +666,7 @@ class StackDuelGame extends FlameGame {
     if (perfect) {
       _perfectsThisRun += 1;
       analytics.event('perfect', {'combo': _combo});
+      if (_perfectsThisRun == 1) analytics.event('first_perfect', {'mode': _mode});
       haptics.perfect();
       if (!settingsState.muted) sound.perfect(_combo);
       _showPerfectFlash();
@@ -793,7 +798,10 @@ class StackDuelGame extends FlameGame {
     runActive = false;
     _slowmoTimer = 0;
     _combo = 0;
-    if (_tutorialRun) settingsState.markTutorialDone();
+    if (_tutorialRun) {
+      settingsState.markTutorialDone();
+      analytics.event('tutorial_done');
+    }
     haptics.gameOver();
     if (!settingsState.muted) sound.gameOver();
     _screenFlash(const Color(0x55E74C3C), 0.4); // red game-over flash
@@ -801,6 +809,9 @@ class StackDuelGame extends FlameGame {
     analytics.event('game_over', {
       'score': scoreState.current,
       'blocks': _tower.length,
+      'perfects': _perfectsThisRun,
+      'mode': _mode,
+      'revives': _reviveCount,
     });
 
     if (!_finalizedThisRun) {
@@ -864,6 +875,7 @@ class StackDuelGame extends FlameGame {
     lastUnlocked = fresh;
     for (final a in fresh) {
       await crystalState.add(a.reward);
+      analytics.event('achievement_unlock', {'id': a.id.name});
     }
   }
 
