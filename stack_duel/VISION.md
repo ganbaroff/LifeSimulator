@@ -125,9 +125,23 @@ Locked defaults (owner: "решай сам"): client-only launch + ONE server fe
   phc_ Project API key into `window.POSTHOG_KEY` in web/index.html → events flow.
   Then build D1/D7 + funnel dashboards via PostHog MCP (schema-first, after events
   exist).
-- Sprint 3 = Telegram-native (SDK identity → real duel names + t.me/share native
-  share). Sprint 4 = Supabase daily leaderboard + balance. Sprint 5 = BotFather
-  publish + soft-launch to 20–50 people + measure D7 → gate decision.
+- **Sprint 3 (Telegram-native) — SHIPPED** (3b53c41, 1.10.0+27): telegram_bridge
+  (js_interop) → real player names in duels (no more "a friend") + native
+  t.me/share. Web build clean.
+- **Sprint 4 (Supabase daily leaderboard) — SHIPPED** (b7c4890, 1.11.0+28):
+  leaderboard_bridge (js_interop → Supabase REST), state/leaderboard.dart (pure
+  parser + submit/fetch), leaderboard_overlay; daily runs post score; entry
+  points on title + daily game-over. Volaura project URL + PUBLIC publishable key
+  embedded. **OWNER 1-PASTE:** run `stack_duel/supabase/leaderboard.sql` in the
+  Volaura Supabase SQL Editor (MCP write blocked in sandbox) → board goes live.
+- **Sprint 5 = PUBLISH + soft-launch + measure (owner-gated).** Owner actions to
+  go live: (1) paste PostHog phc_ key into web/index.html POSTHOG_KEY; (2) run the
+  leaderboard SQL; (3) BotFather /newapp → t.me/{bot}/{app} + /setmenubutton.
+  Then share the link to 20–50 people, measure D1 now / D7 in a week → GATE
+  (D7 ≥ ~10–15% → invest; else fix core / re-pick, keep the pipeline).
+  Blocked-in-sandbox notes: PostHog/Supabase MCP *write*/approval streams fail
+  here (reads work); posthog.com is egress-blocked. So the two config pastes are
+  owner-side. All code is shipped + green (81 pure + 51 flutter; web build clean).
 
 ## Next action (post-compact resume)
 1. Re-read this file + HANDOFF.md (§15 build log = latest state).
