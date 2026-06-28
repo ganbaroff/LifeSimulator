@@ -105,6 +105,22 @@ current growth market with real monetization (ads + TON/Stars). NOT Play-first
   Sandbox CANNOT reach github.io or dl.google.com (egress) — owner is the eyes for
   the live site; APK Android SDK build only happens in CI.
 
+## CURRENT DIRECTION (supersedes the P1–P5 log below)
+Owner committed: **5 sprints of finishing → publish.** Honest reality (agreed):
+zero real users, all retention hooks unvalidated; market base-rate is harsh. The
+decisive metric is **D7 retention ≥ ~10–15%** (below 10% = core-loop problem no
+marketing fixes). Full plan: `/root/.claude/plans/async-gathering-yeti.md`.
+Locked defaults (owner: "решай сам"): client-only launch + ONE server feature
+(Supabase daily leaderboard); free/no-ads at launch; monetize only after the gate.
+- **Sprint 1 (first-minute onboarding + feel) — SHIPPED** (36b1276, build
+  1.8.0+24): `settings_state.dart` (tutorialDone+muted); first-ever run crawls the
+  first blocks for an easy early perfect + HUD hints; mute toggle; SFX gated.
+  77 pure + 48 flutter green.
+- Sprint 2 = PostHog analytics (real impl behind the Analytics seam) → D1/D7 +
+  funnel, so the gate is measurable. Sprint 3 = Telegram-native (SDK identity +
+  t.me/share). Sprint 4 = Supabase daily leaderboard + balance. Sprint 5 =
+  BotFather publish + soft-launch to 20–50 people + measure D7 → gate decision.
+
 ## Next action (post-compact resume)
 1. Re-read this file + HANDOFF.md (§15 build log = latest state).
 2. **P1 (City meta MVP) SHIPPED** (8e10211, build 1.1.0+16): `city_math.dart`
