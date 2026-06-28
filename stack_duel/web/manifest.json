@@ -1,11 +1,11 @@
 {
-    "name": "Stack Duel",
-    "short_name": "Stack Duel",
+    "name": "Stack City",
+    "short_name": "Stack City",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0A0E15",
     "theme_color": "#0A0E15",
-    "description": "Tap to stack. Nail the centre for a perfect combo. How high can you climb?",
+    "description": "Stack blocks to build a city, collect residents, and duel friends. How high can you climb?",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

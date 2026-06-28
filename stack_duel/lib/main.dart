@@ -98,7 +98,7 @@ class StackDuelApp extends StatelessWidget {
     )..playerName = telegramUserName();
 
     return MaterialApp(
-      title: 'Stack Duel',
+      title: 'Stack City',
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: GameWidget<StackDuelGame>(
@@ -167,7 +167,7 @@ class StartOverlay extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           const Text(
-            'STACK DUEL',
+            'STACK CITY',
             style: TextStyle(
               color: Colors.white,
               fontSize: 40,

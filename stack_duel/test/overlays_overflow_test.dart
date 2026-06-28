@@ -82,7 +82,7 @@ void main() {
       MaterialApp(home: Scaffold(body: StartOverlay(game: game, duel: duel))),
     );
     expect(tester.takeException(), isNull, reason: 'no overflow on a short screen');
-    expect(find.text('STACK DUEL'), findsOneWidget);
+    expect(find.text('STACK CITY'), findsOneWidget);
     expect(find.text('Accept Duel'), findsOneWidget);
   });
 

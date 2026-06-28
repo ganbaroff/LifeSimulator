@@ -215,6 +215,9 @@ class StackDuelGame extends FlameGame {
   /// True if the current top moving block is a golden bonus block.
   bool _movingGolden = false;
 
+  /// Transient camera zoom-punch amount on a perfect (decays to 0) — juice.
+  double _zoomPunch = 0;
+
   /// Crystal cost to revive the current run (scales each revive).
   int get reviveCost => 2 + _reviveCount * 2;
 
@@ -391,6 +394,8 @@ class StackDuelGame extends FlameGame {
     _finalizeComplete = false;
     _reviveCount = 0;
     _movingGolden = false;
+    _zoomPunch = 0;
+    camera.viewfinder.zoom = 1.0;
     lastUnlocked = [];
     _tutorialRun = !settingsState.tutorialDone;
     runActive = true;
@@ -682,6 +687,7 @@ class StackDuelGame extends FlameGame {
       _showPerfectFlash();
       _perfectBurst(restLeft + restWidth / 2, y + blockHeight / 2);
       _residentCheer(restLeft + restWidth / 2, y);
+      _zoomPunch = 0.05; // quick camera punch-in on a perfect
       // Combo milestone fanfare.
       if (_combo == 5) _floatText('🔥 ON FIRE', size.y * 0.2);
       if (_combo == 8) _floatText('⚡ UNSTOPPABLE', size.y * 0.2);
@@ -953,6 +959,14 @@ class StackDuelGame extends FlameGame {
     final moving = _moving;
     if (moving != null) {
       moving.speed = _currentSpeed * (_slowmoActive ? 0.4 : 1.0);
+    }
+    // Camera punch on a perfect: a quick zoom-in that decays back to 1.0.
+    if (_zoomPunch > 0.0008) {
+      camera.viewfinder.zoom = 1.0 + _zoomPunch;
+      _zoomPunch *= 0.80;
+    } else if (_zoomPunch != 0) {
+      _zoomPunch = 0;
+      camera.viewfinder.zoom = 1.0;
     }
     // Smoothly scroll the camera upward as the tower grows.
     final current = camera.viewfinder.position;
