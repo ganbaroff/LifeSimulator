@@ -22,6 +22,28 @@
   <!-- Telegram Mini App SDK: open full-screen inside Telegram + expose WebApp. -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
+  <!-- Null-safe Telegram helpers the Dart client calls (Sprint 3): the player's
+       name (kills duel "a friend") + native in-chat share via t.me/share. Both
+       degrade gracefully when not running inside Telegram. -->
+  <script>
+    window.sdTgName = function () {
+      try {
+        var u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe
+          && Telegram.WebApp.initDataUnsafe.user;
+        return (u && u.first_name) ? String(u.first_name) : "";
+      } catch (e) { return ""; }
+    };
+    window.sdTgShare = function (url, text) {
+      try {
+        var w = window.Telegram && Telegram.WebApp;
+        var link = "https://t.me/share/url?url=" + encodeURIComponent(url) +
+          "&text=" + encodeURIComponent(text);
+        if (w && w.openTelegramLink) { w.openTelegramLink(link); return true; }
+      } catch (e) {}
+      return false;
+    };
+  </script>
+
   <!-- PostHog product analytics (Sprint 2). The key below is a PUBLIC, write-only
        project key (safe to commit). === ONE-TIME SETUP ===: paste your key from
        PostHog → Project Settings → "Project API Key" (starts with phc_) into

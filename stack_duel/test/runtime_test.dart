@@ -744,6 +744,17 @@ void main() {
   });
 
   testWithGame<StackDuelGame>(
+      'telegram: a duel link carries the real player name (Sprint 3)', create,
+      (game) async {
+    await game.ready();
+    game.playerName = 'Yusif';
+    game.activeDaily = DailyConfig.fromSeed(20260628);
+    final back = decodeDuel(Uri.parse(game.duelLink()).queryParameters['duel']!);
+    expect(back, isNotNull);
+    expect(back!.name, 'Yusif', reason: 'no more anonymous "a friend"');
+  });
+
+  testWithGame<StackDuelGame>(
       'mute: a muted run plays no sound but still buzzes', create, (game) async {
     await game.ready();
     await game.settingsState.setMuted(true);

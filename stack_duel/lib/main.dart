@@ -6,6 +6,7 @@ import 'game/achievements_overlay.dart';
 import 'game/analytics_posthog.dart';
 import 'game/city_overlay.dart';
 import 'game/stack_duel_game.dart';
+import 'game/telegram_bridge.dart';
 import 'state/achievements.dart';
 import 'state/city_state.dart';
 import 'state/coin_state.dart';
@@ -93,7 +94,7 @@ class StackDuelApp extends StatelessWidget {
       streakState: streakState,
       settingsState: settingsState,
       analytics: const PostHogAnalytics(),
-    );
+    )..playerName = telegramUserName();
 
     return MaterialApp(
       title: 'Stack Duel',
@@ -323,6 +324,9 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
 
   Future<void> _shareDaily() async {
     game.analytics.event('share', {'mode': game.isDuel ? 'duel' : 'daily'});
+    // Inside Telegram: open the native chat picker. Elsewhere: copy to clipboard.
+    final shared = telegramShare(game.duelLink(), game.dailyShareText());
+    if (shared) return;
     await Clipboard.setData(ClipboardData(text: game.dailyShareCard()));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

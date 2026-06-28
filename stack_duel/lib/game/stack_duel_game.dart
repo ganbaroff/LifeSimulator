@@ -131,6 +131,11 @@ class StackDuelGame extends FlameGame {
   /// Public base URL of the hosted game (used to build share/duel links).
   static const String siteUrl = 'https://ganbaroff.github.io/LifeSimulator/';
 
+  /// The player's display name (from the Telegram WebApp on web; '' otherwise).
+  /// Set once at startup; used so a duel challenge shows a real name, not
+  /// "a friend" (Sprint 3).
+  String playerName = '';
+
   /// Base-width fraction + perfect window, overridden by the daily config.
   double get _baseWidthFactor => activeDaily?.baseWidthFactor ?? 0.45;
   double get _epsilon => activeDaily?.perfectEpsilon ?? _perfectEpsilon;
@@ -454,7 +459,7 @@ class StackDuelGame extends FlameGame {
   String duelLink() {
     final d = activeDaily;
     if (d == null) return siteUrl;
-    final token = encodeDuel(d.seed, '', scoreState.current);
+    final token = encodeDuel(d.seed, playerName, scoreState.current);
     return '$siteUrl?duel=$token';
   }
 
@@ -467,7 +472,12 @@ class StackDuelGame extends FlameGame {
   /// Shareable result card for a finished Daily/Duel run (copy -> paste into a
   /// chat). The viral atom: same seed, comparable scores, an emoji grid like
   /// Wordle — and the link is a duel challenge, so every share recruits a player.
-  String dailyShareCard() {
+  String dailyShareCard() =>
+      '${dailyShareText()}\nBeat me 👉 ${duelLink()}';
+
+  /// The card body WITHOUT the link — for native Telegram share, where the URL
+  /// is passed separately so it isn't duplicated.
+  String dailyShareText() {
     final d = activeDaily;
     if (d == null) return '';
     final bar = perfectBar(_perfectsThisRun, _tower.length);
@@ -479,8 +489,7 @@ class StackDuelGame extends FlameGame {
         : '';
     return '$header\n'
         '${result}Height ${_tower.length}  ·  Score ${scoreState.current}\n'
-        '$bar\n'
-        'Beat me 👉 ${duelLink()}';
+        '$bar';
   }
 
   /// One-line duel verdict for the result overlay (empty if not a duel).
