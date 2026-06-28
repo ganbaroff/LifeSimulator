@@ -79,7 +79,7 @@
        PostHog → Project Settings → "Project API Key" (starts with phc_) into
        POSTHOG_KEY. Until set, analytics stays OFF and every sdTrack() is a no-op. -->
   <script>
-    window.POSTHOG_KEY = ""; // <-- paste your phc_... key here to turn analytics on
+    window.POSTHOG_KEY = "phc_se8LwdYnuhw7pzxfQZRCVGG3gr8EcDKsQGEg8dUAKYsi"; // public write-only project token (safe in client)
     window.sdTrack = function (name, props) {
       try {
         if (window.POSTHOG_KEY && window.posthog && window.posthog.capture) {
