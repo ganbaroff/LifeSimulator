@@ -33,6 +33,22 @@
         return (u && u.first_name) ? String(u.first_name) : "";
       } catch (e) { return ""; }
     };
+    // Telegram user id (numeric string) — used for referral code generation.
+    window.sdTgUserId = function () {
+      try {
+        var u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe
+          && Telegram.WebApp.initDataUnsafe.user;
+        return (u && u.id) ? String(u.id) : "";
+      } catch (e) { return ""; }
+    };
+    // start_param passed when Mini App was opened via a deep link (e.g. startapp=ref_12345).
+    window.sdTgStartParam = function () {
+      try {
+        var sp = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe
+          && Telegram.WebApp.initDataUnsafe.start_param;
+        return sp ? String(sp) : "";
+      } catch (e) { return ""; }
+    };
     window.sdTgShare = function (url, text) {
       try {
         var w = window.Telegram && Telegram.WebApp;

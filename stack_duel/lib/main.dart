@@ -52,11 +52,27 @@ Future<void> main() async {
     if (token != null && token.isNotEmpty) incomingDuel = decodeDuel(token);
   } catch (_) {}
 
+  // Referral: detect incoming ref code from Telegram start_param or ?ref= URL
+  // param. Grant +3 💎 crystals to the new player exactly once (C3 fix).
+  String incomingRefCode = '';
+  try {
+    incomingRefCode = telegramStartParam(); // Telegram Mini App deep link
+    if (incomingRefCode.isEmpty) {
+      incomingRefCode = Uri.base.queryParameters['ref'] ?? '';
+    }
+  } catch (_) {}
+  if (incomingRefCode.startsWith('ref_') && !settingsState.referralGranted) {
+    await crystalState.add(3);
+    await settingsState.markReferralGranted();
+  }
+
   // Crash reporting (AUDIT H3): wire Flutter errors + uncaught async errors
   // to PostHog so soft-launch issues are visible without a native crash reporter.
   FlutterError.onError = (FlutterErrorDetails d) {
     posthogException(d.exceptionAsString(), d.stack?.toString() ?? '');
   };
+
+  final tgUserId = telegramUserId();
 
   runZonedGuarded(
     () => runApp(StackDuelApp(
@@ -69,6 +85,8 @@ Future<void> main() async {
       streakState: streakState,
       settingsState: settingsState,
       incomingDuel: incomingDuel,
+      incomingRefCode: incomingRefCode,
+      tgUserId: tgUserId,
     )),
     (error, stack) => posthogException(error.toString(), stack.toString()),
   );
@@ -86,6 +104,8 @@ class StackDuelApp extends StatelessWidget {
     required this.streakState,
     required this.settingsState,
     this.incomingDuel,
+    this.incomingRefCode = '',
+    this.tgUserId = '',
   });
 
   final ScoreState scoreState;
@@ -97,6 +117,10 @@ class StackDuelApp extends StatelessWidget {
   final StreakState streakState;
   final SettingsState settingsState;
   final DuelChallenge? incomingDuel;
+  /// Non-empty when the app was opened via a referral link (C3).
+  final String incomingRefCode;
+  /// Telegram user id string — passed through so invite links use the real id.
+  final String tgUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +136,11 @@ class StackDuelApp extends StatelessWidget {
       analytics: const PostHogAnalytics(),
     )..playerName = telegramUserName();
 
+    // Track referral open so the funnel is visible in PostHog (C3).
+    if (incomingRefCode.isNotEmpty) {
+      game.analytics.event('referral_open', {'ref': incomingRefCode});
+    }
+
     return MaterialApp(
       title: 'Stack City',
       debugShowCheckedModeBanner: false,
@@ -120,8 +149,13 @@ class StackDuelApp extends StatelessWidget {
           game: game,
           initialActiveOverlays: const ['start'],
           overlayBuilderMap: {
-            'start': (context, game) =>
-                StartOverlay(game: game, duel: incomingDuel),
+            'start': (context, game) => StartOverlay(
+                  game: game,
+                  duel: incomingDuel,
+                  showReferralBonus: incomingRefCode.isNotEmpty &&
+                      settingsState.referralGranted,
+                  tgUserId: tgUserId,
+                ),
             'gameOver': (context, game) => GameOverOverlay(game: game),
             'city': (context, game) => CityOverlay(game: game),
             'achievements': (context, game) => AchievementsOverlay(game: game),
@@ -135,11 +169,45 @@ class StackDuelApp extends StatelessWidget {
 
 /// Title screen shown on launch: Play, Daily Challenge, and — if the page was
 /// opened from a duel link — an Accept-the-duel banner.
-class StartOverlay extends StatelessWidget {
-  const StartOverlay({super.key, required this.game, this.duel});
+class StartOverlay extends StatefulWidget {
+  const StartOverlay({
+    super.key,
+    required this.game,
+    this.duel,
+    this.showReferralBonus = false,
+    this.tgUserId = '',
+  });
 
   final StackDuelGame game;
   final DuelChallenge? duel;
+  /// True when the player just got +3 💎 from a referral link (C3).
+  final bool showReferralBonus;
+  /// Telegram user id for building outbound referral links (C3).
+  final String tgUserId;
+
+  @override
+  State<StartOverlay> createState() => _StartOverlayState();
+}
+
+class _StartOverlayState extends State<StartOverlay> {
+  StackDuelGame get game => widget.game;
+  DuelChallenge? get duel => widget.duel;
+
+  Future<void> _shareInvite() async {
+    game.analytics.event('invite_share', {});
+    final link = game.referralLink(tgUserId: widget.tgUserId);
+    final text = game.referralShareText();
+    final shared = telegramShare(link, text);
+    if (shared) return;
+    await Clipboard.setData(ClipboardData(text: '$text\n$link'));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Invite link copied — share it in any chat!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,6 +271,24 @@ class StartOverlay extends StatelessWidget {
                 : 'Play daily to build a streak 🔥',
             style: const TextStyle(color: Color(0xFFE67E22), fontSize: 14),
           ),
+          // Referral bonus banner — shown once when a new player opens via an
+          // invite link and the crystals have been granted (C3).
+          if (widget.showReferralBonus) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D2B18),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF2ECC71), width: 1.5),
+              ),
+              child: const Text(
+                '🎁 +3 💎 bonus crystals — thanks for joining!',
+                style: TextStyle(color: Color(0xFF2ECC71), fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
           const SizedBox(height: 28),
           // Incoming duel: prominent Accept banner.
           if (duel != null) ...[
@@ -301,6 +387,19 @@ class StartOverlay extends StatelessWidget {
               '🏆 Achievements  ${game.achievementState.count}/${kAchievements.length}',
               style: const TextStyle(
                 color: Color(0xFFF1C40F),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Invite button — the viral referral hook (C3).
+          GestureDetector(
+            onTap: _shareInvite,
+            child: const Text(
+              '🎁 Invite friends  (+💎 for them)',
+              style: TextStyle(
+                color: Color(0xFF2ECC71),
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),

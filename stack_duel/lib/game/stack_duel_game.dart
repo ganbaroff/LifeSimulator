@@ -502,6 +502,19 @@ class StackDuelGame extends FlameGame {
     return '🏙 Stack City\nScore ${scoreState.current}  ·  ${config.modifier}\nCan you beat me?';
   }
 
+  /// Outbound referral invite link (C3). Uses the player's Telegram user id if
+  /// available, falling back to the display name so the referral is attributable.
+  /// Callers inject [tgUserId] (from the bridge) to keep this method testable.
+  String referralLink({String tgUserId = ''}) {
+    final code = tgUserId.isNotEmpty
+        ? 'ref_$tgUserId'
+        : (playerName.isNotEmpty ? 'ref_${Uri.encodeComponent(playerName)}' : 'ref_anon');
+    return '$siteUrl?ref=$code';
+  }
+
+  String referralShareText() =>
+      '🏙 Stack City — tap to stack, build your city!\nJoin me and grab +3 💎 bonus crystals 👇';
+
   /// The card body WITHOUT the link — for native Telegram share, where the URL
   /// is passed separately so it isn't duplicated.
   String dailyShareText() {

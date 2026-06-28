@@ -6,12 +6,34 @@ import 'dart:js_interop';
 @JS('sdTgName')
 external JSString _sdTgName();
 
+@JS('sdTgUserId')
+external JSString _sdTgUserId();
+
+@JS('sdTgStartParam')
+external JSString _sdTgStartParam();
+
 @JS('sdTgShare')
 external JSBoolean _sdTgShare(JSString url, JSString text);
 
 String telegramUserName() {
   try {
     return _sdTgName().toDart;
+  } catch (_) {
+    return '';
+  }
+}
+
+String telegramUserId() {
+  try {
+    return _sdTgUserId().toDart;
+  } catch (_) {
+    return '';
+  }
+}
+
+String telegramStartParam() {
+  try {
+    return _sdTgStartParam().toDart;
   } catch (_) {
     return '';
   }
