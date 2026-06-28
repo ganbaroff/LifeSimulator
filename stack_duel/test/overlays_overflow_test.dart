@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:stack_duel/game/achievements_overlay.dart';
+import 'package:stack_duel/game/leaderboard_overlay.dart';
 import 'package:stack_duel/main.dart';
 import 'package:stack_duel/game/stack_duel_game.dart';
 import 'package:stack_duel/state/achievements.dart';
@@ -84,6 +86,31 @@ void main() {
     expect(tester.takeException(), isNull, reason: 'no overflow on a short screen');
     expect(find.text('STACK CITY'), findsOneWidget);
     expect(find.text('Accept Duel'), findsOneWidget);
+  });
+
+  testWidgets('LeaderboardOverlay renders without overflow at 320×520',
+      (tester) async {
+    final game = await _game();
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LeaderboardOverlay(game: game))),
+    );
+    // Advance microtask queue so the stub leaderboard future resolves.
+    await tester.pump();
+    expect(tester.takeException(), isNull,
+        reason: 'no overflow or errors on a short screen');
+    expect(find.text('DAILY LEADERBOARD'), findsOneWidget);
+  });
+
+  testWidgets('AchievementsOverlay with all 9 unlocked + long name fits',
+      (tester) async {
+    final game = await _game();
+    await game.achievementState.recordEarned(AchId.values.toSet());
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: AchievementsOverlay(game: game))),
+    );
+    expect(tester.takeException(), isNull,
+        reason: 'no overflow even with all achievements unlocked');
+    expect(find.textContaining('ACHIEVEMENTS'), findsOneWidget);
   });
 
   testWidgets('GameOverOverlay with all 9 toasts + revive fits', (tester) async {

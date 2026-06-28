@@ -47,7 +47,9 @@ jobs:
       # "ничего не изменилось" / stale BUILD badge). Without it every refresh is
       # served fresh. Offline/PWA isn't needed for a web + Telegram-mini-app game.
       - name: Build web
-        run: flutter build web --release --pwa-strategy=none --base-href /LifeSimulator/ --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}-web
+        # --no-web-resources-cdn: self-host CanvasKit instead of fetching ~7 MB
+        # from gstatic CDN at runtime — fixes first-load blank on mobile (AUDIT C4).
+        run: flutter build web --release --pwa-strategy=none --no-web-resources-cdn --base-href /LifeSimulator/ --dart-define=BUILD_TAG=${{ steps.vars.outputs.sha }}-web
 
       # GitHub Pages does not serve from subfolders with a Jekyll skip; add a
       # .nojekyll so paths starting with _ (Flutter assets) are served as-is.

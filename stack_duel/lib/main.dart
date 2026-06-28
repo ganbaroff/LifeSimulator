@@ -1,6 +1,12 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+// Conditional import: real PostHog on web, no-op stub in tests / VM.
+import 'game/posthog_bridge_stub.dart'
+    if (dart.library.js_interop) 'game/posthog_bridge_web.dart';
 
 import 'game/achievements_overlay.dart';
 import 'game/analytics_posthog.dart';
@@ -46,17 +52,26 @@ Future<void> main() async {
     if (token != null && token.isNotEmpty) incomingDuel = decodeDuel(token);
   } catch (_) {}
 
-  runApp(StackDuelApp(
-    scoreState: scoreState,
-    coinState: coinState,
-    skinState: skinState,
-    cityState: cityState,
-    crystalState: crystalState,
-    achievementState: achievementState,
-    streakState: streakState,
-    settingsState: settingsState,
-    incomingDuel: incomingDuel,
-  ));
+  // Crash reporting (AUDIT H3): wire Flutter errors + uncaught async errors
+  // to PostHog so soft-launch issues are visible without a native crash reporter.
+  FlutterError.onError = (FlutterErrorDetails d) {
+    posthogException(d.exceptionAsString(), d.stack?.toString() ?? '');
+  };
+
+  runZonedGuarded(
+    () => runApp(StackDuelApp(
+      scoreState: scoreState,
+      coinState: coinState,
+      skinState: skinState,
+      cityState: cityState,
+      crystalState: crystalState,
+      achievementState: achievementState,
+      streakState: streakState,
+      settingsState: settingsState,
+      incomingDuel: incomingDuel,
+    )),
+    (error, stack) => posthogException(error.toString(), stack.toString()),
+  );
 }
 
 class StackDuelApp extends StatelessWidget {
@@ -180,13 +195,14 @@ class StartOverlay extends StatelessWidget {
             'Best  ${game.scoreState.best}      ◆ ${game.coinState.total}      💎 ${game.crystalState.total}',
             style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
-          if (game.streakState.current > 0) ...[
-            const SizedBox(height: 6),
-            Text(
-              '🔥 ${game.streakState.current}-day streak',
-              style: const TextStyle(color: Color(0xFFE67E22), fontSize: 14),
-            ),
-          ],
+          // Always show streak — contextual text nudges new players (H6 fix).
+          const SizedBox(height: 6),
+          Text(
+            game.streakState.current > 0
+                ? '🔥 ${game.streakState.current}-day streak'
+                : 'Play daily to build a streak 🔥',
+            style: const TextStyle(color: Color(0xFFE67E22), fontSize: 14),
+          ),
           const SizedBox(height: 28),
           // Incoming duel: prominent Accept banner.
           if (duel != null) ...[
@@ -351,6 +367,24 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
     );
   }
 
+  // C2 fix: endless mode now creates a challenge using today's daily seed so
+  // the primary Play button is no longer a social dead-end.
+  Future<void> _shareEndless() async {
+    game.analytics.event('share', {'mode': 'endless'});
+    final link = game.endlessChallengeLink();
+    final text = game.endlessDuelShareText();
+    final shared = telegramShare(link, text);
+    if (shared) return;
+    await Clipboard.setData(ClipboardData(text: '$text\nChallenge me 👉 $link'));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Challenge copied — paste into any chat!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final skins = game.skinState;
@@ -477,7 +511,20 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
                     label: Text(game.isDuel ? 'Challenge back' : 'Share',
                         style: const TextStyle(fontSize: 16)),
                   )
-                else
+                else ...[
+                  // Endless game-over: surface the challenge/viral loop (C2 fix).
+                  OutlinedButton.icon(
+                    onPressed: _shareEndless,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFFF1C40F)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                    ),
+                    icon: const Icon(Icons.share, size: 18),
+                    label: const Text('Challenge friends',
+                        style: TextStyle(fontSize: 16)),
+                  ),
                   OutlinedButton(
                     onPressed: () => game.overlays.add('city'),
                     style: OutlinedButton.styleFrom(
@@ -489,6 +536,7 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
                     child: Text('View City  (${game.cityState.totalBuildings})',
                         style: const TextStyle(fontSize: 16)),
                   ),
+                ],
                 if (game.isDaily && !game.isDuel)
                   OutlinedButton(
                     onPressed: () => game.overlays.add('leaderboard'),

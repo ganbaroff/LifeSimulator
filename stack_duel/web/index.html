@@ -51,22 +51,28 @@
     window.sdLbSubmit = function (seed, name, score, height) {
       try {
         if (!window.SUPA_URL) return;
+        // Include tg_user_id when available for per-user dedup (AUDIT H2).
+        var u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
+        var tgId = u && u.id ? u.id : null;
+        var body = { seed: seed, name: name, score: score, height: height };
+        if (tgId) body.tg_user_id = tgId;
         fetch(window.SUPA_URL + "/rest/v1/stack_scores", {
           method: "POST",
           headers: {
             "apikey": window.SUPA_KEY,
             "Authorization": "Bearer " + window.SUPA_KEY,
             "Content-Type": "application/json",
-            "Prefer": "return=minimal"
+            "Prefer": "return=minimal,resolution=merge-duplicates"
           },
-          body: JSON.stringify({ seed: seed, name: name, score: score, height: height })
+          body: JSON.stringify(body)
         }).catch(function () {});
       } catch (e) {}
     };
+    // Read from the dedup view (stack_scores_top) — one best row per player (H2).
     window.sdLbTop = function (seed) {
       try {
         if (!window.SUPA_URL) return Promise.resolve("[]");
-        return fetch(window.SUPA_URL + "/rest/v1/stack_scores?seed=eq." + seed +
+        return fetch(window.SUPA_URL + "/rest/v1/stack_scores_top?seed=eq." + seed +
           "&order=score.desc&limit=50&select=name,score,height", {
           headers: { "apikey": window.SUPA_KEY, "Authorization": "Bearer " + window.SUPA_KEY }
         }).then(function (r) { return r.text(); }).catch(function () { return "[]"; });
@@ -91,7 +97,22 @@
       if (!window.POSTHOG_KEY) return; // not configured -> skip loading PostHog
       !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
       posthog.init(window.POSTHOG_KEY, { api_host: "https://us.i.posthog.com", capture_pageview: false, persistence: "localStorage", person_profiles: "identified_only" });
+      // Identify by Telegram user id for stable D1/D7 cohorts (AUDIT C1).
+      // PostHog stubs queue this; it fires once the library loads. Without this,
+      // person_profiles:"identified_only" means cohorts are always empty.
+      try {
+        var _u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
+        if (_u && _u.id) posthog.identify(String(_u.id), { name: _u.first_name || "", username: _u.username || "" });
+      } catch (e) {}
     })();
+    // Crash reporting helper: Dart bridge calls this for Flutter + zone errors (AUDIT H3).
+    window.sdCaptureException = function(msg, stack) {
+      try {
+        if (window.posthog && window.posthog.capture) {
+          window.posthog.capture("$exception", { message: String(msg), stack: String(stack || "").substring(0, 2000) });
+        }
+      } catch (e) {}
+    };
   </script>
 
   <style>

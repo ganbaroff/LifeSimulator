@@ -198,6 +198,10 @@ class StackDuelGame extends FlameGame {
   /// Guards once-per-run economy (the city building + ad cadence) across revives.
   bool _finalizedThisRun = false;
 
+  /// Guards the streak crystal reward — granted once per app session so multiple
+  /// runs on the same day don't each pay out crystals (H6 fix).
+  bool _streakGrantedThisSession = false;
+
   /// Perfects already paid out as coins this run (so a revived run only tops up
   /// the delta instead of double-paying).
   int _coinsPaidThisRun = 0;
@@ -481,6 +485,23 @@ class StackDuelGame extends FlameGame {
   String dailyShareCard() =>
       '${dailyShareText()}\nBeat me 👉 ${duelLink()}';
 
+  /// For endless-mode game-over: encode a duel using today's daily seed + current
+  /// score so that a casual player can still create a challenge (C2 fix — the
+  /// growth atom was previously unreachable from the primary Play button).
+  String endlessChallengeLink() {
+    final n = DateTime.now();
+    final seed = dailySeedForDate(n.year, n.month, n.day);
+    final token = encodeDuel(seed, playerName, scoreState.current);
+    return '$siteUrl?duel=$token';
+  }
+
+  String endlessDuelShareText() {
+    final n = DateTime.now();
+    final seed = dailySeedForDate(n.year, n.month, n.day);
+    final config = DailyConfig.fromSeed(seed);
+    return '🏙 Stack City\nScore ${scoreState.current}  ·  ${config.modifier}\nCan you beat me?';
+  }
+
   /// The card body WITHOUT the link — for native Telegram share, where the URL
   /// is passed separately so it isn't duplicated.
   String dailyShareText() {
@@ -488,8 +509,8 @@ class StackDuelGame extends FlameGame {
     if (d == null) return '';
     final bar = perfectBar(_perfectsThisRun, _tower.length);
     final header = isDuel
-        ? '⚔️ Stack Duel ${d.label}  ·  ${d.modifier}'
-        : '🏙 Stack Daily ${d.label}  ·  ${d.modifier}';
+        ? '⚔️ Stack City Duel ${d.label}  ·  ${d.modifier}'
+        : '🏙 Stack City ${d.label}  ·  ${d.modifier}';
     final result = isDuel
         ? '${duelResultLine(activeOpponent!.name, scoreState.current, activeOpponent!.score)}\n'
         : '';
@@ -681,7 +702,11 @@ class StackDuelGame extends FlameGame {
     if (perfect) {
       _perfectsThisRun += 1;
       analytics.event('perfect', {'combo': _combo});
-      if (_perfectsThisRun == 1) analytics.event('first_perfect', {'mode': _mode});
+      // Fire exactly once per user lifetime (H4 fix — previously fired per run).
+      if (_perfectsThisRun == 1 && !settingsState.firstPerfectDone) {
+        analytics.event('first_perfect', {'mode': _mode});
+        settingsState.markFirstPerfectDone(); // fire-and-forget async
+      }
       haptics.perfect();
       if (!settingsState.muted) sound.perfect(_combo);
       _showPerfectFlash();
@@ -864,7 +889,14 @@ class StackDuelGame extends FlameGame {
 
     // Goals re-evaluate every death (recordEarned dedups; pays crystals).
     await _evaluateAchievements();
-    await streakState.recordPlay(_todayEpochDay());
+    final streak = await streakState.recordPlay(_todayEpochDay());
+    // Escalating crystal reward for daily streaks — once per session (H6 fix).
+    if (!_streakGrantedThisSession) {
+      _streakGrantedThisSession = true;
+      final crystalReward = streak >= 14 ? 10 : streak >= 7 ? 5 : streak >= 3 ? 2 : 1;
+      await crystalState.add(crystalReward);
+      analytics.event('streak_reward', {'streak': streak, 'crystals': crystalReward});
+    }
     await scoreState.maybeUpdateBest();
 
     // Daily Challenge runs post to the shared leaderboard (not duels — they use

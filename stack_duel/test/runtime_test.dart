@@ -522,7 +522,7 @@ void main() {
     expect(_top(game).size.x, lessThan(endlessBase),
         reason: 'narrow daily base is thinner than the default run');
     final card = game.dailyShareCard();
-    expect(card, contains('Stack Daily #20260101'));
+    expect(card, contains('Stack City #20260101'));
     expect(card, contains('Narrow'));
 
     // Returning to endless clears the daily.
@@ -657,7 +657,8 @@ void main() {
 
     final ok = await game.revive();
     expect(ok, isTrue);
-    expect(game.crystalState.total, 10 - cost, reason: 'crystals spent');
+    // +1 streak crystal granted on first game-over of the session (H6 fix).
+    expect(game.crystalState.total, 11 - cost, reason: 'crystals spent');
     expect(game.isGameOver, isFalse, reason: 'run continues');
     expect(game.runActive, isTrue);
   });

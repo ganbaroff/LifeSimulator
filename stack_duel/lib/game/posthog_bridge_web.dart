@@ -14,3 +14,10 @@ void posthogCapture(String name, Map<String, Object?> props) {
     // Never let analytics break gameplay.
   }
 }
+
+void posthogException(String msg, String stack) {
+  posthogCapture(r'$exception', {
+    'message': msg,
+    'stack': stack.length > 2000 ? stack.substring(0, 2000) : stack,
+  });
+}
