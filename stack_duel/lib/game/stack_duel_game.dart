@@ -16,6 +16,7 @@ import '../state/daily_seed.dart';
 import '../state/duel.dart';
 import '../state/powers.dart';
 import '../state/score_state.dart';
+import '../state/settings_state.dart';
 import '../state/skin_state.dart';
 import '../state/streak_state.dart';
 import 'ads.dart';
@@ -42,6 +43,7 @@ class StackDuelGame extends FlameGame {
     required this.crystalState,
     required this.achievementState,
     required this.streakState,
+    required this.settingsState,
     this.haptics = const DeviceHaptics(),
     this.analytics = const NoopAnalytics(),
     this.sound = const GameSound(),
@@ -67,6 +69,13 @@ class StackDuelGame extends FlameGame {
 
   /// Daily streak (return hook).
   final StreakState streakState;
+
+  /// One-time tutorial flag + mute (Sprint 1: onboarding + feel).
+  final SettingsState settingsState;
+
+  /// True while the first-ever run is being played (drives hints + an easier
+  /// early pace so the player gets a guaranteed early "perfect" WOW).
+  bool _tutorialRun = false;
 
   /// Tactile feedback seam (injected so tests can use a fake).
   final Haptics haptics;
@@ -219,6 +228,7 @@ class StackDuelGame extends FlameGame {
   late TextComponent _comboText;
   late TextComponent _coinText;
   late TextComponent _vsText;
+  late TextComponent _hintText;
   final TextPaint _hudPaint = TextPaint(
     style: const TextStyle(
       color: Colors.white,
@@ -318,6 +328,15 @@ class StackDuelGame extends FlameGame {
     );
     camera.viewport.add(_vsText);
 
+    // First-run teach-by-doing hint (centred, above the tower).
+    _hintText = TextComponent(
+      text: '',
+      textRenderer: _comboPaint,
+      position: Vector2(size.x / 2, size.y * 0.42),
+      anchor: Anchor.center,
+    );
+    camera.viewport.add(_hintText);
+
     // Full-screen tap catcher (component-based TapCallbacks). Lives in the
     // viewport so it covers the screen regardless of camera scroll.
     camera.viewport.add(_TapLayer(this));
@@ -363,6 +382,7 @@ class StackDuelGame extends FlameGame {
     _reviveCount = 0;
     _movingGolden = false;
     lastUnlocked = [];
+    _tutorialRun = !settingsState.tutorialDone;
     runActive = true;
 
     _centerX = size.x / 2;
@@ -472,7 +492,11 @@ class StackDuelGame extends FlameGame {
   double get _currentSpeed {
     final base = activeDaily?.startSpeed ?? _baseSpeed;
     final per = activeDaily?.speedPerPoint ?? _speedPerPoint;
-    return math.min(base + scoreState.current * per, _maxSpeed);
+    final speed = math.min(base + scoreState.current * per, _maxSpeed);
+    // First-ever run: crawl the first few blocks so the player lands an easy
+    // early perfect (teach-by-doing + a WOW moment).
+    if (_tutorialRun && _tower.length <= 3) return speed * 0.5;
+    return speed;
   }
 
   void _spawnMovingBlock() {
@@ -580,7 +604,7 @@ class StackDuelGame extends FlameGame {
       if (_shieldArmed) {
         _shieldArmed = false;
         haptics.perfect();
-        sound.perfect(1);
+        if (!settingsState.muted) sound.perfect(1);
         _floatText('🛡️ SAVED', size.y * 0.30);
         _spawnMovingBlock();
         return;
@@ -639,7 +663,7 @@ class StackDuelGame extends FlameGame {
       _perfectsThisRun += 1;
       analytics.event('perfect', {'combo': _combo});
       haptics.perfect();
-      sound.perfect(_combo);
+      if (!settingsState.muted) sound.perfect(_combo);
       _showPerfectFlash();
       _perfectBurst(restLeft + restWidth / 2, y + blockHeight / 2);
       _residentCheer(restLeft + restWidth / 2, y);
@@ -648,7 +672,7 @@ class StackDuelGame extends FlameGame {
       if (_combo == 8) _floatText('⚡ UNSTOPPABLE', size.y * 0.2);
     } else {
       haptics.success();
-      sound.drop();
+      if (!settingsState.muted) sound.drop();
     }
 
     // Combo multiplier feeds the score (capped — see comboMultiplier).
@@ -769,8 +793,9 @@ class StackDuelGame extends FlameGame {
     runActive = false;
     _slowmoTimer = 0;
     _combo = 0;
+    if (_tutorialRun) settingsState.markTutorialDone();
     haptics.gameOver();
-    sound.gameOver();
+    if (!settingsState.muted) sound.gameOver();
     _screenFlash(const Color(0x55E74C3C), 0.4); // red game-over flash
     _screenShake();
     analytics.event('game_over', {
@@ -914,6 +939,19 @@ class StackDuelGame extends FlameGame {
     _vsText.text = isDuel
         ? 'vs ${duelDisplayName(activeOpponent!.name)}: ${activeOpponent!.score}'
         : '';
+
+    // First-run hints: teach the tap, then teach the centre = perfect.
+    if (_tutorialRun && !isGameOver) {
+      if (_tower.length <= 1) {
+        _hintText.text = '👆 TAP to drop the block';
+      } else if (_tower.length <= 4) {
+        _hintText.text = 'Line up the CENTER → PERFECT';
+      } else {
+        _hintText.text = '';
+      }
+    } else {
+      _hintText.text = '';
+    }
 
     // Background hue drifts as the tower climbs — a sense of journey.
     final hue = (212 + scoreState.current * 4) % 360.0;

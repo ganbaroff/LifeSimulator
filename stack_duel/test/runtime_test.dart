@@ -35,6 +35,7 @@ import 'package:stack_duel/state/crystal_state.dart';
 import 'package:stack_duel/state/daily_seed.dart';
 import 'package:stack_duel/state/duel.dart';
 import 'package:stack_duel/state/powers.dart';
+import 'package:stack_duel/state/settings_state.dart';
 import 'package:stack_duel/state/streak_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/score_state.dart';
@@ -117,6 +118,7 @@ void main() {
   late CrystalState crystalState;
   late AchievementState achievementState;
   late StreakState streakState;
+  late SettingsState settingsState;
   late FakeHaptics haptics;
   late FakeSound sound;
   late FakeAds ads;
@@ -137,6 +139,8 @@ void main() {
     await achievementState.load();
     streakState = StreakState();
     await streakState.load();
+    settingsState = SettingsState();
+    await settingsState.load();
     haptics = FakeHaptics();
     sound = FakeSound();
     ads = FakeAds();
@@ -150,6 +154,7 @@ void main() {
         crystalState: crystalState,
         achievementState: achievementState,
         streakState: streakState,
+        settingsState: settingsState,
         haptics: haptics,
         sound: sound,
         ads: ads,
@@ -678,5 +683,37 @@ void main() {
     expect(cityState.totalBuildings, 1, reason: 'still one building for the run');
     expect(cityState.buildings.single.height, greaterThan(firstHeight),
         reason: 'building grew to the final tower height');
+  });
+
+  testWithGame<StackDuelGame>(
+      'tutorial: first run shows the tap hint, then is marked done', create,
+      (game) async {
+    await game.ready();
+    expect(settingsState.tutorialDone, isFalse);
+    final hints = game.camera.viewport.children
+        .whereType<TextComponent>()
+        .map((t) => t.text)
+        .toList();
+    expect(hints.any((t) => t.contains('TAP')), isTrue,
+        reason: 'first-run tap hint is shown');
+
+    // End the first run -> tutorial is marked done (next run is normal).
+    game.overlays.addEntry('gameOver', (_, __) => const SizedBox.shrink());
+    _moving(game).position.x = _top(game).right + 80;
+    game.dropBlock();
+    await game.ready();
+    expect(settingsState.tutorialDone, isTrue);
+  });
+
+  testWithGame<StackDuelGame>(
+      'mute: a muted run plays no sound but still buzzes', create, (game) async {
+    await game.ready();
+    await game.settingsState.setMuted(true);
+
+    _moving(game).position.x = _top(game).position.x; // perfect
+    game.dropBlock();
+    await game.ready();
+    expect(sound.perfectCount, 0, reason: 'muted: no perfect tone');
+    expect(haptics.perfectCount, 1, reason: 'haptics fire regardless of mute');
   });
 }

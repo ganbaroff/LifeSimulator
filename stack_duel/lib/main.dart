@@ -11,6 +11,7 @@ import 'state/coin_state.dart';
 import 'state/crystal_state.dart';
 import 'state/duel.dart';
 import 'state/score_state.dart';
+import 'state/settings_state.dart';
 import 'state/skin_state.dart';
 import 'state/streak_state.dart';
 
@@ -32,6 +33,8 @@ Future<void> main() async {
   await achievementState.load();
   final streakState = StreakState();
   await streakState.load();
+  final settingsState = SettingsState();
+  await settingsState.load();
 
   // If the page was opened from a duel link (?duel=token), decode the challenge.
   DuelChallenge? incomingDuel;
@@ -48,6 +51,7 @@ Future<void> main() async {
     crystalState: crystalState,
     achievementState: achievementState,
     streakState: streakState,
+    settingsState: settingsState,
     incomingDuel: incomingDuel,
   ));
 }
@@ -62,6 +66,7 @@ class StackDuelApp extends StatelessWidget {
     required this.crystalState,
     required this.achievementState,
     required this.streakState,
+    required this.settingsState,
     this.incomingDuel,
   });
 
@@ -72,6 +77,7 @@ class StackDuelApp extends StatelessWidget {
   final CrystalState crystalState;
   final AchievementState achievementState;
   final StreakState streakState;
+  final SettingsState settingsState;
   final DuelChallenge? incomingDuel;
 
   @override
@@ -84,6 +90,7 @@ class StackDuelApp extends StatelessWidget {
       crystalState: crystalState,
       achievementState: achievementState,
       streakState: streakState,
+      settingsState: settingsState,
     );
 
     return MaterialApp(
@@ -263,6 +270,17 @@ class StartOverlay extends StatelessWidget {
                 color: Color(0xFFF1C40F),
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          StatefulBuilder(
+            builder: (context, setLocal) => GestureDetector(
+              onTap: () => setLocal(
+                  () => game.settingsState.setMuted(!game.settingsState.muted)),
+              child: Text(
+                game.settingsState.muted ? '🔇 Sound: Off' : '🔊 Sound: On',
+                style: const TextStyle(color: Colors.white54, fontSize: 14),
               ),
             ),
           ),

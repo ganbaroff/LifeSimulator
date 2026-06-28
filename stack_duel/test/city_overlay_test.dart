@@ -19,6 +19,7 @@ import 'package:stack_duel/state/city_state.dart';
 import 'package:stack_duel/state/coin_state.dart';
 import 'package:stack_duel/state/crystal_state.dart';
 import 'package:stack_duel/state/score_state.dart';
+import 'package:stack_duel/state/settings_state.dart';
 import 'package:stack_duel/state/skin_state.dart';
 import 'package:stack_duel/state/streak_state.dart';
 
@@ -41,6 +42,8 @@ Future<StackDuelGame> _gameWithCity(List<List<int>> runs) async {
   await ach.load();
   final streak = StreakState();
   await streak.load();
+  final settings = SettingsState();
+  await settings.load();
   return StackDuelGame(
     scoreState: score,
     coinState: coin,
@@ -49,6 +52,7 @@ Future<StackDuelGame> _gameWithCity(List<List<int>> runs) async {
     crystalState: crystal,
     achievementState: ach,
     streakState: streak,
+    settingsState: settings,
   );
 }
 
