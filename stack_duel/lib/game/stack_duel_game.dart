@@ -132,6 +132,10 @@ class StackDuelGame extends FlameGame {
   /// Public base URL of the hosted game (used to build share/duel links).
   static const String siteUrl = 'https://ganbaroff.github.io/LifeSimulator/';
 
+  /// Telegram bot username. Used to build Mini App deep links once /newapp
+  /// is registered with BotFather (Sprint 5).
+  static const String botUsername = 'CreatorBy_bot';
+
   /// The player's display name (from the Telegram WebApp on web; '' otherwise).
   /// Set once at startup; used so a duel challenge shows a real name, not
   /// "a friend" (Sprint 3).
@@ -509,11 +513,16 @@ class StackDuelGame extends FlameGame {
 
   /// Outbound referral invite link (C3). Uses the player's Telegram user id if
   /// available, falling back to the display name so the referral is attributable.
-  /// Callers inject [tgUserId] (from the bridge) to keep this method testable.
-  String referralLink({String tgUserId = ''}) {
+  /// [miniAppName] is the BotFather short name (e.g. 'stack') — once set,
+  /// links become t.me/CreatorBy_bot/{miniAppName}?startapp=ref_... so
+  /// Telegram passes start_param natively. Falls back to the web URL.
+  String referralLink({String tgUserId = '', String miniAppName = ''}) {
     final code = tgUserId.isNotEmpty
         ? 'ref_$tgUserId'
         : (playerName.isNotEmpty ? 'ref_${Uri.encodeComponent(playerName)}' : 'ref_anon');
+    if (miniAppName.isNotEmpty) {
+      return 'https://t.me/$botUsername/$miniAppName?startapp=$code';
+    }
     return '$siteUrl?ref=$code';
   }
 
