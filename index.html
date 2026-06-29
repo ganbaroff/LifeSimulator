@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/LifeSimulator/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Stack City — tap to stack, nail the centre for a perfect combo.">
+  <meta name="theme-color" content="#0A0E15">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Stack City">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Stack City</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Telegram Mini App SDK: open full-screen inside Telegram + expose WebApp. -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Null-safe Telegram helpers the Dart client calls (Sprint 3): the player's
+       name (kills duel "a friend") + native in-chat share via t.me/share. Both
+       degrade gracefully when not running inside Telegram. -->
+  <script>
+    window.sdTgName = function () {
+      try {
+        var u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe
+          && Telegram.WebApp.initDataUnsafe.user;
+        return (u && u.first_name) ? String(u.first_name) : "";
+      } catch (e) { return ""; }
+    };
+    // Telegram user id (numeric string) — used for referral code generation.
+    window.sdTgUserId = function () {
+      try {
+        var u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe
+          && Telegram.WebApp.initDataUnsafe.user;
+        return (u && u.id) ? String(u.id) : "";
+      } catch (e) { return ""; }
+    };
+    // start_param passed when Mini App was opened via a deep link (e.g. startapp=ref_12345).
+    window.sdTgStartParam = function () {
+      try {
+        var sp = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe
+          && Telegram.WebApp.initDataUnsafe.start_param;
+        return sp ? String(sp) : "";
+      } catch (e) { return ""; }
+    };
+    window.sdTgShare = function (url, text) {
+      try {
+        var w = window.Telegram && Telegram.WebApp;
+        var link = "https://t.me/share/url?url=" + encodeURIComponent(url) +
+          "&text=" + encodeURIComponent(text);
+        if (w && w.openTelegramLink) { w.openTelegramLink(link); return true; }
+      } catch (e) {}
+      return false;
+    };
+
+    // Supabase daily leaderboard (Sprint 4). URL + publishable key are PUBLIC
+    // (client-side by design; security is enforced by row-level security).
+    // Requires the `stack_scores` table (see stack_duel/supabase/leaderboard.sql).
+    window.SUPA_URL = "https://dwdgzfusjsobnixgyzjk.supabase.co";
+    window.SUPA_KEY = "sb_publishable_lVUcn3G29V449ltPzCJF4g_ID5G3Ud9";
+    window.sdLbSubmit = function (seed, name, score, height) {
+      try {
+        if (!window.SUPA_URL) return;
+        // Include tg_user_id when available for per-user dedup (AUDIT H2).
+        var u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
+        var tgId = u && u.id ? u.id : null;
+        var body = { seed: seed, name: name, score: score, height: height };
+        if (tgId) body.tg_user_id = tgId;
+        fetch(window.SUPA_URL + "/rest/v1/stack_scores", {
+          method: "POST",
+          headers: {
+            "apikey": window.SUPA_KEY,
+            "Authorization": "Bearer " + window.SUPA_KEY,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal,resolution=merge-duplicates"
+          },
+          body: JSON.stringify(body)
+        }).catch(function () {});
+      } catch (e) {}
+    };
+    // Read from the dedup view (stack_scores_top) — one best row per player (H2).
+    window.sdLbTop = function (seed) {
+      try {
+        if (!window.SUPA_URL) return Promise.resolve("[]");
+        return fetch(window.SUPA_URL + "/rest/v1/stack_scores_top?seed=eq." + seed +
+          "&order=score.desc&limit=50&select=name,score,height", {
+          headers: { "apikey": window.SUPA_KEY, "Authorization": "Bearer " + window.SUPA_KEY }
+        }).then(function (r) { return r.text(); }).catch(function () { return "[]"; });
+      } catch (e) { return Promise.resolve("[]"); }
+    };
+  </script>
+
+  <!-- PostHog product analytics (Sprint 2). The key below is a PUBLIC, write-only
+       project key (safe to commit). === ONE-TIME SETUP ===: paste your key from
+       PostHog → Project Settings → "Project API Key" (starts with phc_) into
+       POSTHOG_KEY. Until set, analytics stays OFF and every sdTrack() is a no-op. -->
+  <script>
+    window.POSTHOG_KEY = "phc_se8LwdYnuhw7pzxfQZRCVGG3gr8EcDKsQGEg8dUAKYsi"; // public write-only project token (safe in client)
+    window.sdTrack = function (name, props) {
+      try {
+        if (window.POSTHOG_KEY && window.posthog && window.posthog.capture) {
+          window.posthog.capture(name, props || {});
+        }
+      } catch (e) {}
+    };
+    (function () {
+      if (!window.POSTHOG_KEY) return; // not configured -> skip loading PostHog
+      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+      posthog.init(window.POSTHOG_KEY, { api_host: "https://us.i.posthog.com", capture_pageview: false, persistence: "localStorage", person_profiles: "identified_only" });
+      // Identify by Telegram user id for stable D1/D7 cohorts (AUDIT C1).
+      // PostHog stubs queue this; it fires once the library loads. Without this,
+      // person_profiles:"identified_only" means cohorts are always empty.
+      try {
+        var _u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
+        if (_u && _u.id) posthog.identify(String(_u.id), { name: _u.first_name || "", username: _u.username || "" });
+      } catch (e) {}
+    })();
+    // Crash reporting helper: Dart bridge calls this for Flutter + zone errors (AUDIT H3).
+    window.sdCaptureException = function(msg, stack) {
+      try {
+        if (window.posthog && window.posthog.capture) {
+          window.posthog.capture("$exception", { message: String(msg), stack: String(stack || "").substring(0, 2000) });
+        }
+      } catch (e) {}
+    };
+  </script>
+
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #0A0E15; overflow: hidden; }
+    #loading {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(#243B55, #0A0E15);
+      font-family: -apple-system, Roboto, Arial, sans-serif;
+      transition: opacity .35s ease;
+    }
+    #loading .bars { display: flex; flex-direction: column; align-items: center; }
+    #loading .bar { height: 18px; border-radius: 2px; margin: 2px 0; }
+    #loading .title {
+      color: #fff; font-size: 34px; font-weight: 800; letter-spacing: 2px; margin-top: 22px;
+    }
+    #loading .sub { color: #7f8c9b; font-size: 14px; margin-top: 14px; }
+    #loading .dot { animation: pulse 1s infinite ease-in-out; }
+    @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="bars">
+      <div class="bar" style="width:90px;background:#E74C3C"></div>
+      <div class="bar" style="width:120px;background:#E67E22;margin-left:22px"></div>
+      <div class="bar" style="width:104px;background:#F1C40F"></div>
+    </div>
+    <div class="title">STACK CITY</div>
+    <div class="sub"><span class="dot">●</span> loading</div>
+  </div>
+
+  <script>
+    try { var t = window.Telegram && window.Telegram.WebApp; if (t) { t.ready(); t.expand(); } } catch (e) {}
+
+    // Deploy-proof: the app is now built with --pwa-strategy=none (no service
+    // worker), so deploys are always fresh. But older builds DID register a
+    // service worker that pins a client to a stale build (the "ничего не
+    // изменилось" / frozen BUILD badge). Kill any leftover worker + its caches
+    // and reload ONCE so such clients jump to the latest build. No-op once no
+    // worker exists; sessionStorage-guarded so it can never loop.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        if (!regs.length) return;
+        Promise.all(regs.map(function (r) { return r.unregister(); }))
+          .then(function () {
+            if (window.caches && caches.keys) {
+              return caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+              });
+            }
+          })
+          .then(function () {
+            if (!sessionStorage.getItem('sw_purged')) {
+              sessionStorage.setItem('sw_purged', '1');
+              window.location.reload();
+            }
+          });
+      });
+    }
+
+    function hideLoading() {
+      var l = document.getElementById('loading');
+      if (l) { l.style.opacity = '0'; setTimeout(function () { l.remove(); }, 350); }
+    }
+    window.addEventListener('flutter-first-frame', hideLoading);
+    // Fallback: never let the splash stay stuck over the game.
+    setTimeout(hideLoading, 8000);
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
