@@ -1094,8 +1094,31 @@ class StackDuelGame extends FlameGame {
   @override
   void onGameResize(Vector2 newSize) {
     super.onGameResize(newSize);
-    // Keep horizontal framing centered if the surface size changes.
+    final oldCenterX = _centerX;
     _centerX = newSize.x / 2;
+
+    if (!runActive) return;
+    final dx = _centerX - oldCenterX;
+
+    // Re-center all placed tower blocks (including the base).
+    if (dx.abs() > 0.5) {
+      for (final block in _tower) {
+        block.position.x += dx;
+      }
+      _baseWidth = newSize.x * _baseWidthFactor;
+    }
+
+    // Update moving block sweep bounds regardless of whether width changed
+    // (height-only resize still changes world-space viewport boundary).
+    final moving = _moving;
+    if (moving != null) {
+      const margin = 8.0;
+      if (dx.abs() > 0.5) moving.position.x += dx;
+      moving.minX = _centerX - newSize.x / 2 + margin;
+      moving.maxX = _centerX + newSize.x / 2 - margin;
+      moving.position.x =
+          moving.position.x.clamp(moving.minX, moving.maxX - moving.size.x);
+    }
   }
 
   /// Full-screen coloured flash (screen space) that fades out — game-over juice.
