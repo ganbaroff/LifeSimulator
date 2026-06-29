@@ -313,7 +313,9 @@ class _StartOverlayState extends State<StartOverlay> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Beat their score of ${duel!.score} on the same run',
+                    duel!.height > 0
+                        ? 'Beat score ${duel!.score}  ·  height ${duel!.height} blocks'
+                        : 'Beat their score of ${duel!.score}',
                     style: const TextStyle(
                         color: Colors.white70, fontSize: 13),
                   ),
@@ -392,6 +394,19 @@ class _StartOverlayState extends State<StartOverlay> {
               ),
             ),
           ),
+          // Next-unlock hint — sells the meta loop to new players (H5).
+          Builder(builder: (context) {
+            final hint = game.nextPowerHint();
+            if (hint.isEmpty) return const SizedBox.shrink();
+            return Column(mainAxisSize: MainAxisSize.min, children: [
+              const SizedBox(height: 10),
+              Text(
+                hint,
+                style: const TextStyle(color: Color(0xFF7F8C8D), fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ]);
+          }),
           const SizedBox(height: 14),
           // Invite button — the viral referral hook (C3).
           GestureDetector(
@@ -560,6 +575,40 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
                         fontSize: 14,
                         fontWeight: FontWeight.w600)),
             ],
+            // First-ever run: reveal the city meta loop (H5).
+            if (game.cityState.totalBuildings == 1) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A1D10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: const Color(0xFF27AE60), width: 1.5),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '🏙 First building added to your city!',
+                      style: TextStyle(
+                          color: Color(0xFF2ECC71),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Every run grows your city. Keep playing\nto unlock powers and new districts.',
+                      style:
+                          TextStyle(color: Colors.white60, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
             // Revive: spend crystals to continue this run (the monetization hook).
             if (game.canRevive) ...[
               const SizedBox(height: 16),
@@ -579,8 +628,10 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
               ),
             ],
             const SizedBox(height: 18),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
               children: [
                 for (var i = 0; i < SkinState.skins.length; i++)
                   _SkinChip(

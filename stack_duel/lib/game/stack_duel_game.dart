@@ -181,6 +181,7 @@ class StackDuelGame extends FlameGame {
   /// Powers available this run + remaining charges.
   List<Power> _deck = [];
   final Map<PowerId, int> _charges = {};
+  late _PowerBar _powerBar;
 
   /// Armed/active effects.
   bool _widenArmed = false;
@@ -360,7 +361,8 @@ class StackDuelGame extends FlameGame {
 
     // Power bar sits on top (higher priority) so its buttons get taps before
     // the drop layer.
-    camera.viewport.add(_PowerBar(this)..priority = 50);
+    _powerBar = _PowerBar(this)..priority = 50;
+    camera.viewport.add(_powerBar);
 
     _startNewRun();
   }
@@ -379,6 +381,7 @@ class StackDuelGame extends FlameGame {
     _combo = 0;
     _perfectsThisRun = 0;
     scoreState.reset();
+    _powerBar.clearToasts();
 
     // Build this run's power deck from city progress (collection -> abilities).
     final residentCount = residentsOf(cityState.buildings).length;
@@ -469,7 +472,8 @@ class StackDuelGame extends FlameGame {
   String duelLink() {
     final d = activeDaily;
     if (d == null) return siteUrl;
-    final token = encodeDuel(d.seed, playerName, scoreState.current);
+    final token = encodeDuel(d.seed, playerName, scoreState.current,
+        height: _tower.length);
     return '$siteUrl?duel=$token';
   }
 
@@ -491,7 +495,8 @@ class StackDuelGame extends FlameGame {
   String endlessChallengeLink() {
     final n = DateTime.now();
     final seed = dailySeedForDate(n.year, n.month, n.day);
-    final token = encodeDuel(seed, playerName, scoreState.current);
+    final token = encodeDuel(seed, playerName, scoreState.current,
+        height: _tower.length);
     return '$siteUrl?duel=$token';
   }
 
@@ -514,6 +519,31 @@ class StackDuelGame extends FlameGame {
 
   String referralShareText() =>
       '🏙 Stack City — tap to stack, build your city!\nJoin me and grab +3 💎 bonus crystals 👇';
+
+  /// One-line hint for the title screen: which power unlocks next and at what
+  /// city-progress threshold (H5 fix — sells the meta loop to new players).
+  /// Returns '' when all powers are already unlocked.
+  String nextPowerHint() {
+    final rc = residentsOf(cityState.buildings).length;
+    final unlocked = unlockedPowers(
+        cityState.totalBuildings, cityState.totalHeight, rc);
+    for (final p in kAllPowers) {
+      if (!unlocked.contains(p)) {
+        // Give the cheapest threshold that would unlock this power.
+        if (p.id == PowerId.slowmo) {
+          return 'Next unlock: ${p.glyph} ${p.name} — reach city height 30';
+        }
+        if (p.id == PowerId.shield) {
+          return 'Next unlock: ${p.glyph} ${p.name} — reach city height 70';
+        }
+        if (p.id == PowerId.autocenter) {
+          return 'Next unlock: ${p.glyph} ${p.name} — collect 4 residents';
+        }
+        return 'Next unlock: ${p.glyph} ${p.name}';
+      }
+    }
+    return '';
+  }
 
   /// The card body WITHOUT the link — for native Telegram share, where the URL
   /// is passed separately so it isn't duplicated.
@@ -615,6 +645,9 @@ class StackDuelGame extends FlameGame {
     }
     haptics.success();
     analytics.event('power_used', {'id': id.name});
+    // Show first-use description toast (H10).
+    final power = _deck.firstWhere((p) => p.id == id);
+    _powerBar.showDescToast(power);
     return true;
   }
 
@@ -709,7 +742,7 @@ class StackDuelGame extends FlameGame {
     final prevCombo = _combo;
     _combo = perfect ? _combo + 1 : 0;
     if (_combo > _bestComboThisRun) _bestComboThisRun = _combo;
-    if (_combo != prevCombo) {
+    if (_combo != prevCombo && _combo > 0) {
       analytics.event('combo_changed', {'combo': _combo});
     }
     if (perfect) {
@@ -1107,12 +1140,22 @@ class _PowerBar extends PositionComponent with TapCallbacks {
 
   final TextPaint _glyphPaint = TextPaint(style: const TextStyle(fontSize: 26));
   final TextPaint _labelPaint = TextPaint(
-    style: const TextStyle(color: Colors.white, fontSize: 9),
+    style: const TextStyle(color: Colors.white, fontSize: 12),
   );
   final TextPaint _chargePaint = TextPaint(
     style: const TextStyle(
         color: Color(0xFFF1C40F), fontSize: 12, fontWeight: FontWeight.bold),
   );
+  final TextPaint _descPaint = TextPaint(
+    style: const TextStyle(
+        color: Color(0xFFCCE5FF), fontSize: 13, fontStyle: FontStyle.italic),
+  );
+
+  // Description tooltip state: text shown, time remaining (seconds).
+  String _descText = '';
+  double _descTimer = 0;
+  // Track which powers have already had their first-activation toast this run.
+  final Set<PowerId> _toasted = {};
 
   @override
   Future<void> onLoad() async {
@@ -1141,6 +1184,24 @@ class _PowerBar extends PositionComponent with TapCallbacks {
     }
     return out;
   }
+
+  @override
+  void update(double dt) {
+    if (_descTimer > 0) {
+      _descTimer = (_descTimer - dt).clamp(0, double.infinity);
+    }
+  }
+
+  /// Called by the game when a power is activated so the bar can show a
+  /// first-use description toast (H10 fix).
+  void showDescToast(Power power) {
+    if (_toasted.contains(power.id)) return;
+    _toasted.add(power.id);
+    _descText = '${power.glyph} ${power.desc}';
+    _descTimer = 2.5;
+  }
+
+  void clearToasts() => _toasted.clear();
 
   @override
   void render(Canvas canvas) {
@@ -1173,7 +1234,7 @@ class _PowerBar extends PositionComponent with TapCallbacks {
       _labelPaint.render(
         canvas,
         power.name,
-        Vector2(center.dx, rect.bottom - 14),
+        Vector2(center.dx, rect.bottom - 12),
         anchor: Anchor.center,
       );
       _chargePaint.render(
@@ -1181,6 +1242,15 @@ class _PowerBar extends PositionComponent with TapCallbacks {
         '×$charges',
         Vector2(rect.right - 6, rect.top + 6),
         anchor: Anchor.topRight,
+      );
+    }
+    // Description toast fades in at top of bar (H10).
+    if (_descTimer > 0 && _descText.isNotEmpty) {
+      _descPaint.render(
+        canvas,
+        _descText,
+        Vector2(size.x / 2, 0),
+        anchor: Anchor.topCenter,
       );
     }
   }

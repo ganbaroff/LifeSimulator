@@ -10,37 +10,44 @@
 import 'dart:convert';
 
 /// A challenge carried in a `?duel=<token>` link: play [seed] and try to beat
-/// [score] (set by [name], '' if anonymous).
+/// [score] (set by [name], '' if anonymous). [height] is the challenger's tower
+/// height — displayed alongside score so absurd claims (score:99999 height:2)
+/// are visually obvious to recipients (H12 fix).
 class DuelChallenge {
   const DuelChallenge({
     required this.seed,
     required this.name,
     required this.score,
+    this.height = 0,
   });
 
   final int seed;
   final String name;
   final int score;
+  final int height;
 }
 
-/// Encode a challenge into a URL-safe token (base64url of "seed|name|score").
-String encodeDuel(int seed, String name, int score) {
+/// Encode a challenge into a URL-safe token (base64url of "seed|name|score|height").
+/// The 4-part format supersedes the old 3-part format; [decodeDuel] handles both.
+String encodeDuel(int seed, String name, int score, {int height = 0}) {
   final clean = name.replaceAll('|', ' ').trim();
-  return base64Url.encode(utf8.encode('$seed|$clean|$score'));
+  return base64Url.encode(utf8.encode('$seed|$clean|$score|$height'));
 }
 
 /// Decode a `?duel=` token; null if malformed.
+/// Accepts both the current 4-part format and legacy 3-part tokens.
 DuelChallenge? decodeDuel(String token) {
   try {
     // Restore any base64 padding the URL may have dropped.
     final padded = token.padRight((token.length + 3) & ~3, '=');
     final raw = utf8.decode(base64Url.decode(padded));
     final parts = raw.split('|');
-    if (parts.length != 3) return null;
+    if (parts.length < 3) return null;
     final seed = int.tryParse(parts[0]);
     final score = int.tryParse(parts[2]);
     if (seed == null || score == null) return null;
-    return DuelChallenge(seed: seed, name: parts[1], score: score);
+    final height = parts.length >= 4 ? (int.tryParse(parts[3]) ?? 0) : 0;
+    return DuelChallenge(seed: seed, name: parts[1], score: score, height: height);
   } catch (_) {
     return null;
   }

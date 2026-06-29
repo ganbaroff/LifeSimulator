@@ -60,7 +60,7 @@ class SkinState {
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     final stored = _prefs?.getStringList(_ownedKey);
-    owned = {0, if (stored != null) ...stored.map(int.parse)};
+    owned = {0, if (stored != null) ...stored.map(int.tryParse).nonNulls};
     selected = _prefs?.getInt(_selectedKey) ?? 0;
   }
 
